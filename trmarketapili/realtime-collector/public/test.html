@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test - TradingView Data</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #000; color: #0f0; }
+    #data { white-space: pre; }
+  </style>
+</head>
+<body>
+  <h1>🔴 LIVE DATA TEST</h1>
+  <div id="count">Bağlanıyor...</div>
+  <hr>
+  <div id="data"></div>
+
+  <script>
+    let count = 0;
+    const es = new EventSource('/stream');
+    
+    es.onopen = () => {
+      document.getElementById('count').textContent = '✅ Bağlandı!';
+    };
+    
+    es.addEventListener('update', (e) => {
+      count++;
+      const data = JSON.parse(e.data);
+      
+      document.getElementById('count').textContent = `📊 ${count} veri alındı`;
+      
+      const line = `[${new Date().toLocaleTimeString()}] ${JSON.stringify(data.payload).substring(0, 200)}\n`;
+      document.getElementById('data').textContent = line + document.getElementById('data').textContent.split('\n').slice(0, 50).join('\n');
+    });
+    
+    es.onerror = () => {
+      document.getElementById('count').textContent = '❌ HATA!';
+    };
+  </script>
+</body>
+</html>

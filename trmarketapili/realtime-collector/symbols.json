@@ -1,0 +1,32 @@
+{
+  "stocks_tr": [
+    "BIST:AEFES",
+    "BIST:AKBNK",
+    "BIST:ALARK",
+    "BIST:ASELS",
+    "BIST:BIMAS",
+    "BIST:DOHOL",
+    "BIST:ENKAI",
+    "BIST:EREGL",
+    "BIST:FROTO",
+    "BIST:GARAN",
+    "BIST:GUBRF",
+    "BIST:HALKB",
+    "BIST:ISCTR",
+    "BIST:KCHOL",
+    "BIST:KOZAL",
+    "BIST:KOZAA",
+    "BIST:KRDMD",
+    "BIST:PETKM",
+    "BIST:SAHOL",
+    "BIST:SASA",
+    "BIST:SISE",
+    "BIST:TCELL",
+    "BIST:THYAO",
+    "BIST:TOASO",
+    "BIST:TUPRS",
+    "BIST:VAKBN",
+    "BIST:YKBNK",
+    "BIST:ZOREN"
+  ]
+}

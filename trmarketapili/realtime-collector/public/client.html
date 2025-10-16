@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TradingView Realtime Data</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 20px 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #1a202c;
+      font-weight: 700;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #48bb78;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.disconnected {
+      background: #f56565;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tab {
+      padding: 10px 20px;
+      border: none;
+      background: #edf2f7;
+      color: #4a5568;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .filter-tab:hover {
+      background: #e2e8f0;
+    }
+
+    .filter-tab.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card.loading {
+      opacity: 0.6;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .symbol {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    .exchange {
+      font-size: 11px;
+      color: #718096;
+      background: #edf2f7;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .price {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a202c;
+      margin: 8px 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .change {
+      font-size: 15px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      display: inline-block;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .change.positive {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .change.negative {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .change.neutral {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 12px;
+      color: #4a5568;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: #718096;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f56565;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .log-section {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .log-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    .clear-btn {
+      background: #f56565;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .clear-btn:hover {
+      background: #e53e3e;
+    }
+
+    #log {
+      background: #1a202c;
+      color: #68d391;
+      padding: 20px;
+      border-radius: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    #log::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #log::-webkit-scrollbar-track {
+      background: #2d3748;
+      border-radius: 10px;
+    }
+
+    #log::-webkit-scrollbar-thumb {
+      background: #4a5568;
+      border-radius: 10px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 15px;
+      font-size: 13px;
+      color: #4a5568;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📊 TradingView Realtime Data</h1>
+      <div class="header-controls">
+        <div class="stats">
+          <div class="stat-item">
+            <span>📈</span>
+            <span id="totalSymbols">0</span>
+          </div>
+          <div class="stat-item">
+            <span>✅</span>
+            <span id="activeSymbols">0</span>
+          </div>
+        </div>
+        <div class="status">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="status">Bağlanıyor...</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="filterCategory('all')">Tümü</button>
+      <button class="filter-tab" onclick="filterCategory('crypto')">Kripto</button>
+      <button class="filter-tab" onclick="filterCategory('stocks_us')">US Hisse</button>
+      <button class="filter-tab" onclick="filterCategory('stocks_tr')">TR Hisse</button>
+      <button class="filter-tab" onclick="filterCategory('forex')">Forex</button>
+      <button class="filter-tab" onclick="filterCategory('commodities')">Emtia</button>
+    </div>
+
+    <div class="cards-grid" id="cards"></div>
+
+    <div class="log-section">
+      <div class="log-header">
+        <div class="log-title">📡 Raw Data Stream</div>
+        <button class="clear-btn" onclick="clearLog()">Temizle</button>
+      </div>
+      <div id="log">Veri bekleniyor...</div>
+    </div>
+  </div>
+
+  <script>
+    // Başlangıçta boş - API'den gelecek
+    const SYMBOLS = {};
+
+    let es;
+    const statusEl = document.getElementById("status");
+    const statusDot = document.getElementById("statusDot");
+    const logEl = document.getElementById("log");
+    const cardsEl = document.getElementById("cards");
+    const totalSymbolsEl = document.getElementById("totalSymbols");
+    const activeSymbolsEl = document.getElementById("activeSymbols");
+    
+    const symbolData = {};
+    let currentFilter = 'all';
+    let pendingCards = [];
+    let batchTimeout = null;
+
+    // Sembolleri başlat - Artık başlangıçta boş
+    function initializeSymbols() {
+      // Başlangıçta hiçbir şey yapma, dinamik olarak eklenecek
+      totalSymbolsEl.textContent = 0;
+    }
+    
+    // Kategori belirle (dinamik semboller için)
+    function getCategoryForSymbol(symbol) {
+      const [exchange] = symbol.split(':');
+      if (['BINANCE', 'COINBASE', 'KRAKEN', 'BYBIT'].includes(exchange)) return 'crypto';
+      if (['NASDAQ', 'NYSE', 'AMEX'].includes(exchange)) return 'stocks_us';
+      if (exchange === 'BIST') return 'stocks_tr';
+      if (exchange === 'FX' || exchange === 'OANDA') return 'forex';
+      if (['COMEX', 'NYMEX', 'CBOT', 'CME'].includes(exchange)) return 'commodities';
+      return 'stocks_global'; // default - diğer tüm borsalar
+    }
+
+    // Tüm kartları ilk kez oluştur - SEMBOLLER SABİT
+    function renderAllCards() {
+      const allSymbols = Object.keys(symbolData);
+      cardsEl.innerHTML = allSymbols.map(symbol => {
+        const [exchange, ticker] = symbol.split(':');
+        const cardId = symbol.replace(/[^a-zA-Z0-9]/g, '-');
+        const category = symbolData[symbol].category;
+        
+        return `
+          <div class="card loading" id="card-${cardId}" data-category="${category}">
+            <div class="card-header">
+              <div class="symbol">${ticker}</div>
+              <div class="exchange">${exchange}</div>
+            </div>
+            <div class="price">---</div>
+            <div class="change neutral">● 0.00 (0.00%)</div>
+            <div class="info-row">
+              <span>Volume: ---</span>
+              <span class="live-indicator">
+                <div class="live-dot"></div>
+                Bekleniyor
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Sadece veri güncellenecek - SEMBOLLER DEĞİŞMEYECEK
+    function updateCard(symbol) {
+      const cardId = symbol.replace(/[^a-zA-Z0-9]/g, '-');
+      const cardEl = document.getElementById(`card-${cardId}`);
+      if (!cardEl) return;
+      
+      const data = symbolData[symbol];
+      const [exchange, ticker] = symbol.split(':');
+      const price = data.lp || 0;
+      const change = data.ch || 0;
+      const changePercent = data.chp || 0;
+      const volume = data.volume || 0;
+      const isPositive = change > 0;
+      const isNegative = change < 0;
+      const changeClass = isPositive ? 'positive' : isNegative ? 'negative' : 'neutral';
+      
+      cardEl.className = `card ${data._hasData ? '' : 'loading'}`;
+      cardEl.setAttribute('data-category', data.category);
+      
+      const timeStr = data._lastUpdate ? new Date(data._lastUpdate).toLocaleTimeString('tr-TR') : 'Bekleniyor';
+      
+      cardEl.innerHTML = `
+        <div class="card-header">
+          <div class="symbol">${ticker}</div>
+          <div class="exchange">${exchange}</div>
+        </div>
+        <div class="price">${price > 0 ? price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 6}) : '---'}</div>
+        <div class="change ${changeClass}">
+          ${isPositive ? '▲' : isNegative ? '▼' : '●'} ${Math.abs(change).toFixed(2)} (${changePercent.toFixed(2)}%)
+        </div>
+        <div class="info-row">
+          <span>Volume: ${volume > 0 ? volume.toLocaleString() : '---'}</span>
+          <span class="live-indicator">
+            <div class="live-dot"></div>
+            ${timeStr}
+          </span>
+        </div>
+      `;
+    }
+
+    function connect() {
+      if (es) es.close();
+      es = new EventSource("/stream");
+      
+      es.onopen = () => {
+        statusEl.textContent = "Bağlı ✅";
+        statusDot.classList.remove("disconnected");
+      };
+      
+      es.onerror = () => {
+        statusEl.textContent = "Bağlantı Hatası ❌";
+        statusDot.classList.add("disconnected");
+      };
+      
+      es.addEventListener("update", (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          
+          // Log'a ekle
+          const time = new Date(data.ts).toLocaleTimeString('tr-TR');
+          const logEntry = `[${time}] ${JSON.stringify(data.payload).slice(0, 300)}`;
+          const lines = logEl.textContent.split('\n');
+          logEl.textContent = logEntry + '\n' + lines.slice(0, 100).join('\n');
+          
+          // Quote data parse et (TradingView WebSocket)
+          if (data.payload && data.payload.name === "qsd") {
+            const quote = data.payload.params[1];
+            if (quote && quote.n && quote.v) {
+              updateSymbolData(quote.n, quote.v);
+            }
+          }
+          
+          // Puppeteer data
+          if (data.type === "puppeteer" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, data.payload.data);
+          }
+          
+          // TradingView API data
+          if (data.type === "tradingview-api" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: data.payload.changeAbs,
+              chp: data.payload.change,
+              volume: data.payload.volume,
+              description: data.payload.description,
+              type: data.payload.type
+            });
+          }
+
+          // CryptoCompare data
+          if (data.type === "cryptocompare" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: (data.payload.price * data.payload.change / 100),
+              chp: data.payload.change,
+              volume: data.payload.volume || 0
+            });
+          }
+
+          // Alpha Vantage data
+          if (data.type === "alphavantage" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: 0,
+              chp: 0,
+              volume: 0
+            });
+          }
+
+          // FMP data
+          if (data.type === "fmp" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: (data.payload.price * data.payload.change / 100),
+              chp: data.payload.change,
+              volume: data.payload.volume || 0
+            });
+          }
+
+          // CoinGecko data
+          if (data.type === "coingecko" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: (data.payload.price * data.payload.change / 100),
+              chp: data.payload.change,
+              volume: 0
+            });
+          }
+
+          // Twelve Data data
+          if (data.type === "twelvedata" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: 0,
+              chp: 0,
+              volume: 0
+            });
+          }
+
+          // Fixer.io data
+          if (data.type === "fixer" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: 0,
+              chp: 0,
+              volume: 0
+            });
+          }
+
+          // Yahoo Finance Fixed data
+          if (data.type === "yahoo-fixed" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: (data.payload.price * data.payload.change / 100),
+              chp: data.payload.change,
+              volume: data.payload.volume || 0
+            });
+          }
+        } catch (err) {
+          console.error("Parse error:", err);
+        }
+      });
+    }
+
+    function updateSymbolData(symbol, values) {
+      // Eğer sembol yoksa, dinamik olarak ekle
+      if (!symbolData[symbol]) {
+        const category = getCategoryForSymbol(symbol);
+        symbolData[symbol] = {
+          category: category,
+          lp: 0,
+          ch: 0,
+          chp: 0,
+          volume: 0,
+          _lastUpdate: null,
+          _hasData: false
+        };
+        
+        // Yeni kart oluştur
+        const [exchange, ticker] = symbol.split(':');
+        const cardId = symbol.replace(/[^a-zA-Z0-9]/g, '-');
+        const cardHtml = `
+          <div class="card loading" id="card-${cardId}" data-category="${category}">
+            <div class="card-header">
+              <div class="symbol">${ticker}</div>
+              <div class="exchange">${exchange}</div>
+            </div>
+            <div class="price">---</div>
+            <div class="change neutral">● 0.00 (0.00%)</div>
+            <div class="info-row">
+              <span>Volume: ---</span>
+              <span class="live-indicator">
+                <div class="live-dot"></div>
+                Bekleniyor
+              </span>
+            </div>
+          </div>
+        `;
+        
+        // Batch'e ekle
+        pendingCards.push(cardHtml);
+        
+        // Batch timeout'u ayarla (500ms içinde gelen tüm kartları birlikte ekle)
+        if (batchTimeout) clearTimeout(batchTimeout);
+        batchTimeout = setTimeout(() => {
+          if (pendingCards.length > 0) {
+            cardsEl.insertAdjacentHTML('beforeend', pendingCards.join(''));
+            
+            // Filtreleri uygula
+            const allCards = cardsEl.querySelectorAll('.card');
+            const startIndex = allCards.length - pendingCards.length;
+            for (let i = 0; i < pendingCards.length; i++) {
+              const newCard = allCards[startIndex + i];
+              if (newCard) applyCurrentFilter(newCard);
+            }
+            
+            pendingCards = [];
+            totalSymbolsEl.textContent = Object.keys(symbolData).length;
+          }
+        }, 500);
+      }
+      
+      // Verileri birleştir
+      Object.assign(symbolData[symbol], values);
+      symbolData[symbol]._lastUpdate = Date.now();
+      symbolData[symbol]._hasData = true;
+      
+      // Aktif sembol sayısını güncelle
+      const activeCount = Object.values(symbolData).filter(s => s._hasData).length;
+      activeSymbolsEl.textContent = activeCount;
+      
+      // Sadece ilgili kartı güncelle
+      updateCard(symbol);
+    }
+
+    function filterCategory(category) {
+      currentFilter = category;
+      
+      // Tab aktifliğini güncelle
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      // Kartları filtrele
+      document.querySelectorAll('.card').forEach(card => {
+        const cardCategory = card.getAttribute('data-category');
+        if (category === 'all' || cardCategory === category) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+    
+    // Yeni eklenen kartlar için filtreyi uygula
+    function applyCurrentFilter(cardElement) {
+      if (currentFilter === 'all') {
+        cardElement.style.display = 'block';
+      } else {
+        const cardCategory = cardElement.getAttribute('data-category');
+        cardElement.style.display = (cardCategory === currentFilter) ? 'block' : 'none';
+      }
+    }
+
+    function clearLog() {
+      logEl.textContent = 'Log temizlendi...';
+    }
+
+    // Başlat
+    initializeSymbols();
+    connect();
+  </script>
+</body>
+</html>

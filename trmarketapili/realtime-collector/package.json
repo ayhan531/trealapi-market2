@@ -1,0 +1,24 @@
+{
+  "name": "trmarket-api",
+  "version": "1.0.0",
+  "description": "BIST Real-time Data Collector API",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "luxon": "^3.7.2",
+    "node-fetch": "^3.3.2",
+    "puppeteer": "^24.24.1"
+  },
+  "keywords": ["bist", "trading", "api", "realtime", "stock-market"],
+  "author": "TR Market API",
+  "license": "MIT"
+}

@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TradingView Realtime Data</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 20px 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #1a202c;
+      font-weight: 700;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #48bb78;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.disconnected {
+      background: #f56565;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .symbol {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    .exchange {
+      font-size: 12px;
+      color: #718096;
+      background: #edf2f7;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .price {
+      font-size: 36px;
+      font-weight: 700;
+      color: #1a202c;
+      margin: 10px 0;
+    }
+
+    .change {
+      font-size: 16px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      display: inline-block;
+    }
+
+    .change.positive {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .change.negative {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 14px;
+      color: #4a5568;
+    }
+
+    .log-section {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .log-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    .clear-btn {
+      background: #f56565;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .clear-btn:hover {
+      background: #e53e3e;
+    }
+
+    #log {
+      background: #1a202c;
+      color: #68d391;
+      padding: 20px;
+      border-radius: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    #log::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #log::-webkit-scrollbar-track {
+      background: #2d3748;
+      border-radius: 10px;
+    }
+
+    #log::-webkit-scrollbar-thumb {
+      background: #4a5568;
+      border-radius: 10px;
+    }
+
+    .no-data {
+      text-align: center;
+      color: #a0aec0;
+      padding: 40px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📊 TradingView Realtime Data</h1>
+      <div class="status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="status">Bağlanıyor...</span>
+      </div>
+    </header>
+
+    <div class="cards-grid" id="cards"></div>
+
+    <div class="log-section">
+      <div class="log-header">
+        <div class="log-title">📡 Raw Data Stream</div>
+        <button class="clear-btn" onclick="clearLog()">Temizle</button>
+      </div>
+      <div id="log">Veri bekleniyor...</div>
+    </div>
+  </div>
+
+  <script>
+    let es;
+    const statusEl = document.getElementById("status");
+    const statusDot = document.getElementById("statusDot");
+    const logEl = document.getElementById("log");
+    const cardsEl = document.getElementById("cards");
+    const symbolData = {};
+
+    function connect() {
+      if (es) es.close();
+      es = new EventSource("/stream");
+      
+      es.onopen = () => {
+        statusEl.textContent = "Bağlı ✅";
+        statusDot.classList.remove("disconnected");
+      };
+      
+      es.onerror = () => {
+        statusEl.textContent = "Bağlantı Hatası ❌";
+        statusDot.classList.add("disconnected");
+      };
+      
+      es.addEventListener("update", (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          
+          // Log'a ekle
+          const time = new Date(data.ts).toLocaleTimeString();
+          logEl.textContent = `[${time}] ${JSON.stringify(data.payload).slice(0, 500)}\n` + logEl.textContent.split('\n').slice(0, 50).join('\n');
+          
+          // Quote data parse et (TradingView)
+          if (data.payload && data.payload.name === "qsd") {
+            const quote = data.payload.params[1];
+            if (quote && quote.n && quote.v) {
+              updateCard(quote.n, quote.v);
+            }
+          }
+          
+          // Puppeteer data
+          if (data.type === "puppeteer" && data.payload && data.payload.symbol) {
+            updateCard(data.payload.symbol, data.payload.data);
+          }
+          
+          // TradingView API data
+          if (data.type === "tradingview-api" && data.payload && data.payload.symbol) {
+            console.log("API Data:", data.payload.symbol, data.payload.price);
+            updateCard(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: data.payload.changeAbs,
+              chp: data.payload.change,
+              volume: data.payload.volume,
+              description: data.payload.description,
+              type: data.payload.type
+            });
+          }
+        } catch (err) {
+          console.error("Parse error:", err);
+        }
+      });
+    }
+
+    function updateCard(symbol, values) {
+      if (!symbolData[symbol]) {
+        symbolData[symbol] = {};
+      }
+      
+      // Verileri birleştir (kısmi güncellemeler için)
+      Object.assign(symbolData[symbol], values);
+      
+      // Son güncelleme zamanını kaydet
+      symbolData[symbol]._lastUpdate = Date.now();
+      
+      renderCards();
+    }
+
+    function renderCards() {
+      cardsEl.innerHTML = Object.entries(symbolData).map(([symbol, data]) => {
+        const [exchange, ticker] = symbol.split(':');
+        const price = data.lp || 0;
+        const change = data.ch || 0;
+        const changePercent = data.chp || 0;
+        const volume = data.volume || 0;
+        const isPositive = change >= 0;
+        
+        return `
+          <div class="card">
+            <div class="card-header">
+              <div class="symbol">${ticker}</div>
+              <div class="exchange">${exchange}</div>
+            </div>
+            <div class="price">$${price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            <div class="change ${isPositive ? 'positive' : 'negative'}">
+              ${isPositive ? '▲' : '▼'} ${Math.abs(change).toFixed(2)} (${changePercent.toFixed(2)}%)
+            </div>
+            <div class="info-row">
+              <span>Volume: ${volume.toLocaleString()}</span>
+              <span>🔴 LIVE ${new Date(data._lastUpdate || Date.now()).toLocaleTimeString()}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      if (Object.keys(symbolData).length === 0) {
+        cardsEl.innerHTML = '<div class="no-data">Veri bekleniyor...</div>';
+      }
+    }
+
+    function clearLog() {
+      logEl.textContent = 'Log temizlendi...';
+    }
+
+    connect();
+    renderCards();
+  </script>
+</body>
+</html>
