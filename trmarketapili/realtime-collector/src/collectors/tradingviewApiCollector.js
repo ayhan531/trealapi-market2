@@ -19,6 +19,8 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
   // symbols.json'dan BIST sembolleri ve endeksleri yükle
   let targetSymbols = [];
   let targetIndices = [];
+  let manualIndicesAdded = false; // Flag to prevent duplicate indices
+  
   try {
     const symbolsPath = join(__dirname, "../../symbols.json");
     const symbolsData = JSON.parse(readFileSync(symbolsPath, "utf-8"));
@@ -161,9 +163,10 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
       
       console.log(`[TV-API] 📊 TOPLAM: ${stockCount} hisse senedi, ${indexCount} endeks`);
       
-      // Eğer endeks bulunamadıysa, manuel endeks verisi ekle
-      if (indexCount === 0) {
+      // Eğer endeks bulunamadıysa ve daha önce eklenmemişse, manuel endeks verisi ekle
+      if (indexCount === 0 && !manualIndicesAdded) {
         console.log(`[TV-API] ⚠️ ENDEKS BULUNAMADI! Manuel endeks verisi ekleniyor...`);
+        manualIndicesAdded = true;
         
         // Manuel endeks verisi - gerçek değerler için ayrı API çağrısı yapılabilir
         const manualIndices = [
