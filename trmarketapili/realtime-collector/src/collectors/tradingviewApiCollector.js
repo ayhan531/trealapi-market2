@@ -319,27 +319,16 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
 
   // İlk çekimi yap
   const stockCount = await fetchAllSymbols();
-  let indexCount = await fetchBistIndices();
   
-  // Eğer gerçek endeksler çekilemezse, fallback kullan
-  if (indexCount === 0) {
-    indexCount = addFallbackIndices();
-  }
+  // Manuel endeksleri bir kez ekle (basit ve stabil)
+  const indexCount = addFallbackIndices();
   
   console.log(`[TV-API] 🚀 ${stockCount} hisse senedi + ${indexCount} endeks yüklendi!`);
-  console.log(`[TV-API] Hisse senetleri her ${interval / 1000}s, endeksler her 30s güncellenecek...`);
+  console.log(`[TV-API] Hisse senetleri her ${interval / 1000}s güncellenecek, endeksler sabit...`);
 
-  // Hisse senetleri - her 5 saniyede
+  // Sadece hisse senetleri güncelle - endeksler sabit kalacak
   setInterval(async () => {
     const stockCount = await fetchAllSymbols();
     console.log(`[TV-API] 🔄 ${stockCount} hisse senedi güncellendi`);
   }, interval);
-
-  // Endeksler - her 30 saniyede (daha az sıklıkta)
-  setInterval(async () => {
-    const indexCount = await fetchBistIndices();
-    if (indexCount > 0) {
-      console.log(`[TV-API] 📊 ${indexCount} endeks güncellendi`);
-    }
-  }, 30000);
 }
