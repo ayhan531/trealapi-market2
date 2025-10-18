@@ -28,5 +28,14 @@
     "BIST:VAKBN",
     "BIST:YKBNK",
     "BIST:ZOREN"
+  ],
+  "indices_tr": [
+    "BIST:XU100",
+    "BIST:XU050",
+    "BIST:XU030",
+    "BIST:XTEK",
+    "BIST:XBANK",
+    "BIST:XUSIN",
+    "BIST:XUMAL"
   ]
 }
