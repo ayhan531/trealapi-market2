@@ -316,11 +316,8 @@
 
     <div class="filter-tabs">
       <button class="filter-tab active" onclick="filterCategory('all')">Tümü</button>
-      <button class="filter-tab" onclick="filterCategory('crypto')">Kripto</button>
-      <button class="filter-tab" onclick="filterCategory('stocks_us')">US Hisse</button>
       <button class="filter-tab" onclick="filterCategory('stocks_tr')">TR Hisse</button>
-      <button class="filter-tab" onclick="filterCategory('forex')">Forex</button>
-      <button class="filter-tab" onclick="filterCategory('commodities')">Emtia</button>
+      <button class="filter-tab" onclick="filterCategory('indices_tr')">İndeksler</button>
     </div>
 
     <div class="cards-grid" id="cards"></div>
@@ -359,12 +356,16 @@
     
     // Kategori belirle (dinamik semboller için)
     function getCategoryForSymbol(symbol) {
-      const [exchange] = symbol.split(':');
-      if (['BINANCE', 'COINBASE', 'KRAKEN', 'BYBIT'].includes(exchange)) return 'crypto';
-      if (['NASDAQ', 'NYSE', 'AMEX'].includes(exchange)) return 'stocks_us';
+      const [exchange, ticker] = symbol.split(':');
+      
+      // BIST endeksleri
+      if (exchange === 'BIST' && ['XU100', 'XU050', 'XU030', 'XTEK', 'XBANK', 'XUSIN', 'XUMAL'].includes(ticker)) {
+        return 'indices_tr';
+      }
+      
+      // BIST hisse senetleri
       if (exchange === 'BIST') return 'stocks_tr';
-      if (exchange === 'FX' || exchange === 'OANDA') return 'forex';
-      if (['COMEX', 'NYMEX', 'CBOT', 'CME'].includes(exchange)) return 'commodities';
+      
       return 'stocks_global'; // default - diğer tüm borsalar
     }
 
@@ -475,6 +476,18 @@
           
           // TradingView API data
           if (data.type === "tradingview-api" && data.payload && data.payload.symbol) {
+            updateSymbolData(data.payload.symbol, {
+              lp: data.payload.price,
+              ch: data.payload.changeAbs,
+              chp: data.payload.change,
+              volume: data.payload.volume,
+              description: data.payload.description,
+              type: data.payload.type
+            });
+          }
+
+          // TradingView Index data
+          if (data.type === "tradingview-index" && data.payload && data.payload.symbol) {
             updateSymbolData(data.payload.symbol, {
               lp: data.payload.price,
               ch: data.payload.changeAbs,
