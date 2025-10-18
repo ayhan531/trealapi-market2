@@ -100,6 +100,10 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
 
       console.log(`[TV-API] ✅ ${symbols.length} sembol çekildi!`);
 
+      // Debug: Endeksleri kontrol et
+      let indexCount = 0;
+      let stockCount = 0;
+      
       // Her sembolü işle - hem hisse senetleri hem endeksler
       symbols.forEach((item, index) => {
         const symbol = item.s;
@@ -110,6 +114,13 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
         // Endeks mi kontrol et
         const isIndex = targetIndices.includes(symbol);
         const eventType = isIndex ? "tradingview-index" : "tradingview-api";
+        
+        if (isIndex) {
+          indexCount++;
+          console.log(`[TV-API] 📊 ENDEKS BULUNDU: ${symbol} - ${price}`);
+        } else {
+          stockCount++;
+        }
         
         const symbolData = {
           symbol: symbol,
@@ -147,6 +158,14 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
           console.log(`[TV-API] ${prefix} ${symbolData.symbol}: $${price.toFixed(2)} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%)`);
         }
       });
+      
+      console.log(`[TV-API] 📊 TOPLAM: ${stockCount} hisse senedi, ${indexCount} endeks`);
+      
+      // Eğer endeks bulunamadıysa, hedef endeksleri logla
+      if (indexCount === 0) {
+        console.log(`[TV-API] ⚠️ ENDEKS BULUNAMADI! Hedef endeksler:`, targetIndices);
+        console.log(`[TV-API] ⚠️ İlk 10 sembol:`, symbols.slice(0, 10).map(s => s.s));
+      }
       
       totalCount += symbols.length;
     } catch (error) {
