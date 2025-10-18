@@ -163,12 +163,14 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
       
       console.log(`[TV-API] 📊 TOPLAM: ${stockCount} hisse senedi, ${indexCount} endeks`);
       
-      // Eğer endeks bulunamadıysa ve daha önce eklenmemişse, manuel endeks verisi ekle
-      if (indexCount === 0 && !manualIndicesAdded) {
-        console.log(`[TV-API] ⚠️ ENDEKS BULUNAMADI! Manuel endeks verisi ekleniyor...`);
-        manualIndicesAdded = true;
+      // Her zaman manuel endeks verisi ekle (çünkü API endeksleri döndürmüyor)
+      if (indexCount === 0) {
+        if (!manualIndicesAdded) {
+          console.log(`[TV-API] ⚠️ ENDEKS BULUNAMADI! Manuel endeks verisi ekleniyor...`);
+          manualIndicesAdded = true;
+        }
         
-        // Manuel endeks verisi - gerçek değerler için ayrı API çağrısı yapılabilir
+        // Manuel endeks verisi - her güncellemede gönder
         const manualIndices = [
           { symbol: "BIST:XU100", name: "BIST 100", price: 10234.56, change: 1.23, changeAbs: 124.32 },
           { symbol: "BIST:XU050", name: "BIST 50", price: 8765.43, change: 0.89, changeAbs: 77.45 },
@@ -209,11 +211,10 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
             type: "tradingview-index",
             payload: indexData
           });
-
-          console.log(`[TV-API] 📊 MANUEL ENDEKS: ${indexData.symbol}: ${indexData.price.toFixed(2)} (${indexData.change > 0 ? '+' : ''}${indexData.change.toFixed(2)}%)`);
         });
         
         indexCount = manualIndices.length;
+        console.log(`[TV-API] 📊 ${indexCount} manuel endeks gönderildi`);
       }
       
       totalCount += symbols.length;
