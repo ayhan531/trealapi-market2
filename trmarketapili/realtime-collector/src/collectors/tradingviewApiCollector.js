@@ -45,99 +45,6 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
     ? Object.values(markets) 
     : [markets[market] || markets.america];
 
-  // BIST endekslerini çek
-  async function fetchBistIndices() {
-    if (targetIndices.length === 0) return 0;
-    
-    try {
-      console.log(`[TV-API] 📊 BIST endeksleri çekiliyor...`);
-      
-      const payload = {
-        filter: [
-          { left: "name", operation: "match", right: targetIndices.join("|") }
-        ],
-        options: { lang: "en" },
-        symbols: { query: { types: [] }, tickers: targetIndices },
-        columns: [
-          "name", "close", "change", "change_abs", "Recommend.All", "volume", 
-          "market_cap_basic", "price_earnings_ttm", "earnings_per_share_basic_ttm",
-          "number_of_employees", "sector", "description", "type", "subtype", 
-          "update_mode", "pricescale", "minmov", "fractional", "minmove2"
-        ],
-        sort: { sortBy: "name", sortOrder: "asc" },
-        range: [0, targetIndices.length]
-      };
-
-      const headers = {
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-      };
-
-      if (process.env.TRADINGVIEW_SESSION_ID && process.env.TRADINGVIEW_SESSION_ID.trim()) {
-        headers["Cookie"] = process.env.TRADINGVIEW_SESSION_ID;
-      }
-
-      const response = await fetch("https://scanner.tradingview.com/turkey/scan", {
-        method: "POST",
-        headers: headers,
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const indices = data.data || [];
-
-      console.log(`[TV-API] 📊 ${indices.length} endeks çekildi!`);
-
-      // Her endeksi işle
-      indices.forEach((item, index) => {
-        const symbol = item.s;
-        const price = item.d[1] || 0;
-        const changePercent = item.d[2] || 0;
-        const changeAbs = item.d[3] || 0;
-        
-        const indexData = {
-          symbol: symbol,
-          name: item.d[0],
-          price: price,
-          change: changePercent,
-          changeAbs: changeAbs,
-          recommendation: item.d[4],
-          volume: item.d[5] || 0,
-          marketCap: item.d[6],
-          pe: item.d[7],
-          eps: item.d[8],
-          employees: item.d[9],
-          sector: item.d[10],
-          description: item.d[11],
-          type: "INDEX", // Endeks olduğunu belirt
-          subtype: item.d[13],
-          updateMode: item.d[14],
-          pricescale: item.d[15],
-          minmov: item.d[16],
-          fractional: item.d[17],
-          minmove2: item.d[18]
-        };
-
-        // Bus'a gönder
-        bus.emit("data", {
-          ts: Date.now(),
-          type: "tradingview-index",
-          payload: indexData
-        });
-
-        console.log(`[TV-API] 📊 ${indexData.symbol}: ${price.toFixed(2)} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%)`);
-      });
-      
-      return indices.length;
-    } catch (error) {
-      console.error(`[TV-API] Endeks çekme hatası:`, error.message);
-      return 0;
-    }
-  }
 
   // Tüm sembolleri çek
   async function fetchAllSymbols() {
@@ -193,12 +100,16 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
 
       console.log(`[TV-API] ✅ ${symbols.length} sembol çekildi!`);
 
-      // Her sembolü işle - TÜM SEMBOLLER
+      // Her sembolü işle - hem hisse senetleri hem endeksler
       symbols.forEach((item, index) => {
         const symbol = item.s;
         const price = item.d[1] || 0;
         const changePercent = item.d[2] || 0;
         const changeAbs = item.d[3] || 0;
+        
+        // Endeks mi kontrol et
+        const isIndex = targetIndices.includes(symbol);
+        const eventType = isIndex ? "tradingview-index" : "tradingview-api";
         
         const symbolData = {
           symbol: symbol,
@@ -214,7 +125,7 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
           employees: item.d[9],
           sector: item.d[10],
           description: item.d[11],
-          type: item.d[12],
+          type: isIndex ? "INDEX" : item.d[12],
           subtype: item.d[13],
           updateMode: item.d[14],
           pricescale: item.d[15],
@@ -226,13 +137,14 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
         // Bus'a gönder
         bus.emit("data", {
           ts: Date.now(),
-          type: "tradingview-api",
+          type: eventType,
           payload: symbolData
         });
 
         // İlk 20'yi logla
         if (index < 20) {
-          console.log(`[TV-API] ${symbolData.symbol}: $${price.toFixed(2)} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%)`);
+          const prefix = isIndex ? "📊" : "";
+          console.log(`[TV-API] ${prefix} ${symbolData.symbol}: $${price.toFixed(2)} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%)`);
         }
       });
       
@@ -245,16 +157,14 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
     return totalCount;
   }
 
-  // İlk çekimi yap - hem hisse senetleri hem endeksler
-  const stockCount = await fetchAllSymbols();
-  const indexCount = await fetchBistIndices();
-  console.log(`[TV-API] 🚀 ${stockCount} hisse senedi + ${indexCount} endeks yüklendi!`);
+  // İlk çekimi yap - hisse senetleri ve endeksler birlikte
+  const totalCount = await fetchAllSymbols();
+  console.log(`[TV-API] 🚀 ${totalCount} sembol yüklendi (hisse senetleri + endeksler)!`);
   console.log(`[TV-API] Her ${interval / 1000} saniyede bir güncellenecek...`);
 
   // Periyodik güncelleme
   setInterval(async () => {
-    const stockCount = await fetchAllSymbols();
-    const indexCount = await fetchBistIndices();
-    console.log(`[TV-API] 🔄 ${stockCount} hisse senedi + ${indexCount} endeks güncellendi`);
+    const totalCount = await fetchAllSymbols();
+    console.log(`[TV-API] 🔄 ${totalCount} sembol güncellendi`);
   }, interval);
 }
