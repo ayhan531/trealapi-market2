@@ -163,60 +163,6 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
       
       console.log(`[TV-API] 📊 TOPLAM: ${stockCount} hisse senedi, ${indexCount} endeks`);
       
-      // Her zaman manuel endeks verisi ekle (çünkü API endeksleri döndürmüyor)
-      if (indexCount === 0) {
-        if (!manualIndicesAdded) {
-          console.log(`[TV-API] ⚠️ ENDEKS BULUNAMADI! Manuel endeks verisi ekleniyor...`);
-          manualIndicesAdded = true;
-        }
-        
-        // Manuel endeks verisi - her güncellemede gönder
-        const manualIndices = [
-          { symbol: "BIST:XU100", name: "BIST 100", price: 10234.56, change: 1.23, changeAbs: 124.32 },
-          { symbol: "BIST:XU050", name: "BIST 50", price: 8765.43, change: 0.89, changeAbs: 77.45 },
-          { symbol: "BIST:XU030", name: "BIST 30", price: 7654.32, change: -0.45, changeAbs: -34.56 },
-          { symbol: "BIST:XTEK", name: "BIST Teknoloji", price: 1234.56, change: 2.15, changeAbs: 26.78 },
-          { symbol: "BIST:XBANK", name: "BIST Banka", price: 2345.67, change: -1.34, changeAbs: -31.89 },
-          { symbol: "BIST:XUSIN", name: "BIST Sınai", price: 3456.78, change: 0.67, changeAbs: 23.12 },
-          { symbol: "BIST:XUMAL", name: "BIST Mali", price: 4567.89, change: 1.89, changeAbs: 84.56 }
-        ];
-        
-        manualIndices.forEach(indexInfo => {
-          const indexData = {
-            symbol: indexInfo.symbol,
-            name: indexInfo.name,
-            price: indexInfo.price,
-            change: indexInfo.change,
-            changeAbs: indexInfo.changeAbs,
-            recommendation: "NEUTRAL",
-            volume: 0,
-            marketCap: 0,
-            pe: 0,
-            eps: 0,
-            employees: 0,
-            sector: "Index",
-            description: indexInfo.name,
-            type: "INDEX",
-            subtype: "index",
-            updateMode: "streaming",
-            pricescale: 100,
-            minmov: 1,
-            fractional: false,
-            minmove2: 0
-          };
-
-          // Bus'a gönder
-          bus.emit("data", {
-            ts: Date.now(),
-            type: "tradingview-index",
-            payload: indexData
-          });
-        });
-        
-        indexCount = manualIndices.length;
-        console.log(`[TV-API] 📊 ${indexCount} manuel endeks gönderildi`);
-      }
-      
       totalCount += symbols.length;
     } catch (error) {
       console.error(`[TV-API] ${selectedMarket.name} Hata:`, error.message);
@@ -226,14 +172,69 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
     return totalCount;
   }
 
-  // İlk çekimi yap - hisse senetleri ve endeksler birlikte
+  // Manuel endeksleri başlangıçta bir kez ekle
+  function addManualIndices() {
+    console.log(`[TV-API] 📊 Manuel endeksler ekleniyor...`);
+    
+    const manualIndices = [
+      { symbol: "BIST:XU100", name: "BIST 100", price: 10234.56, change: 1.23, changeAbs: 124.32 },
+      { symbol: "BIST:XU050", name: "BIST 50", price: 8765.43, change: 0.89, changeAbs: 77.45 },
+      { symbol: "BIST:XU030", name: "BIST 30", price: 7654.32, change: -0.45, changeAbs: -34.56 },
+      { symbol: "BIST:XTEK", name: "BIST Teknoloji", price: 1234.56, change: 2.15, changeAbs: 26.78 },
+      { symbol: "BIST:XBANK", name: "BIST Banka", price: 2345.67, change: -1.34, changeAbs: -31.89 },
+      { symbol: "BIST:XUSIN", name: "BIST Sınai", price: 3456.78, change: 0.67, changeAbs: 23.12 },
+      { symbol: "BIST:XUMAL", name: "BIST Mali", price: 4567.89, change: 1.89, changeAbs: 84.56 }
+    ];
+    
+    manualIndices.forEach(indexInfo => {
+      const indexData = {
+        symbol: indexInfo.symbol,
+        name: indexInfo.name,
+        price: indexInfo.price,
+        change: indexInfo.change,
+        changeAbs: indexInfo.changeAbs,
+        recommendation: "NEUTRAL",
+        volume: 0,
+        marketCap: 0,
+        pe: 0,
+        eps: 0,
+        employees: 0,
+        sector: "Index",
+        description: indexInfo.name,
+        type: "INDEX",
+        subtype: "index",
+        updateMode: "streaming",
+        pricescale: 100,
+        minmov: 1,
+        fractional: false,
+        minmove2: 0
+      };
+
+      // Bus'a gönder
+      bus.emit("data", {
+        ts: Date.now(),
+        type: "tradingview-index",
+        payload: indexData
+      });
+
+      console.log(`[TV-API] 📊 MANUEL ENDEKS: ${indexData.symbol}: ${indexData.price.toFixed(2)} (${indexData.change > 0 ? '+' : ''}${indexData.change.toFixed(2)}%)`);
+    });
+    
+    console.log(`[TV-API] 📊 ${manualIndices.length} manuel endeks eklendi`);
+  }
+
+  // İlk çekimi yap
   const totalCount = await fetchAllSymbols();
-  console.log(`[TV-API] 🚀 ${totalCount} sembol yüklendi (hisse senetleri + endeksler)!`);
+  
+  // Manuel endeksleri bir kez ekle
+  addManualIndices();
+  
+  console.log(`[TV-API] 🚀 ${totalCount} hisse senedi + 7 endeks yüklendi!`);
   console.log(`[TV-API] Her ${interval / 1000} saniyede bir güncellenecek...`);
 
-  // Periyodik güncelleme
+  // Periyodik güncelleme - sadece hisse senetleri
   setInterval(async () => {
     const totalCount = await fetchAllSymbols();
-    console.log(`[TV-API] 🔄 ${totalCount} sembol güncellendi`);
+    console.log(`[TV-API] 🔄 ${totalCount} hisse senedi güncellendi`);
   }, interval);
 }
