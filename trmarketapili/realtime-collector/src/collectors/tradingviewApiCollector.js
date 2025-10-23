@@ -16,6 +16,9 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
   console.log(`[TV-API] Market: ${market}`);
   console.log(`[TV-API] Güncelleme aralığı: ${interval}ms`);
   
+  // Global endeks sayısını tut
+  let currentIndexCount = 0;
+  
   // symbols.json'dan BIST sembolleri ve endeksleri yükle
   let targetSymbols = [];
   let targetIndices = [];
@@ -320,15 +323,29 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
   // İlk çekimi yap
   const stockCount = await fetchAllSymbols();
   
-  // Manuel endeksleri bir kez ekle (basit ve stabil)
-  const indexCount = addFallbackIndices();
+  // Gerçek endeksleri çekmeyi dene, başarısız olursa manuel endeksleri ekle
+  let indexCount = await fetchBistIndices();
+  if (indexCount === 0) {
+    console.log(`[TV-API] 📊 Gerçek endeksler çekilemedi, fallback endeksler kullanılıyor...`);
+    indexCount = addFallbackIndices();
+  }
+  currentIndexCount = indexCount;
   
   console.log(`[TV-API] 🚀 ${stockCount} hisse senedi + ${indexCount} endeks yüklendi!`);
-  console.log(`[TV-API] Hisse senetleri her ${interval / 1000}s güncellenecek, endeksler sabit...`);
+  console.log(`[TV-API] Hisse senetleri her ${interval / 1000}s güncellenecek, endeksler her 30s...`);
 
-  // Sadece hisse senetleri güncelle - endeksler sabit kalacak
+  // Hisse senetlerini güncelle
   setInterval(async () => {
     const stockCount = await fetchAllSymbols();
-    console.log(`[TV-API] 🔄 ${stockCount} hisse senedi güncellendi`);
+    console.log(`[TV-API] 🔄 ${stockCount} hisse senedi + ${currentIndexCount} endeks aktif`);
   }, interval);
+
+  // Endeksleri daha az sıklıkla güncelle (her 30 saniyede bir)
+  setInterval(async () => {
+    const indexCount = await fetchBistIndices();
+    if (indexCount > 0) {
+      currentIndexCount = indexCount;
+    }
+    console.log(`[TV-API] 📊 ${indexCount} endeks yenilendi`);
+  }, 30000);
 }
