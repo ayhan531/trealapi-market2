@@ -3,11 +3,10 @@ services:
     name: trmarket-api
     env: node
     plan: free
+    rootDir: trmarketapili/realtime-collector
     buildCommand: npm install
     startCommand: npm start
     envVars:
-      - key: PORT
-        value: 10000
       - key: TVAPI_MARKET
         value: turkey
       - key: TVAPI_INTERVAL
