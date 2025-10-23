@@ -332,7 +332,7 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
   currentIndexCount = indexCount;
   
   console.log(`[TV-API] 🚀 ${stockCount} hisse senedi + ${indexCount} endeks yüklendi!`);
-  console.log(`[TV-API] Hisse senetleri her ${interval / 1000}s güncellenecek, endeksler her 30s...`);
+  console.log(`[TV-API] Hisse senetleri ve endeksler her ${interval / 1000}s güncellenecek...`);
 
   // Hisse senetlerini güncelle
   setInterval(async () => {
@@ -340,12 +340,12 @@ export async function startTradingviewApiCollector({ market = "all", interval = 
     console.log(`[TV-API] 🔄 ${stockCount} hisse senedi + ${currentIndexCount} endeks aktif`);
   }, interval);
 
-  // Endeksleri daha az sıklıkla güncelle (her 30 saniyede bir)
+  // Endeksleri de sık güncelle (her 5 saniyede bir)
   setInterval(async () => {
     const indexCount = await fetchBistIndices();
     if (indexCount > 0) {
       currentIndexCount = indexCount;
     }
     console.log(`[TV-API] 📊 ${indexCount} endeks yenilendi`);
-  }, 30000);
+  }, interval);
 }
