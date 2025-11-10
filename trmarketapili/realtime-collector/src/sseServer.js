@@ -54,6 +54,9 @@ export function createSseServer() {
   // Basit sağlık kontrolü
   app.get("/health", (_, res) => res.json({ ok: true, ts: Date.now() }));
 
+  // Favicon isteğini 404 yerine 204 ile cevapla
+  app.get('/favicon.ico', (_, res) => res.status(204).end());
+
   // Son payload'ı JSON olarak ver (debug)
   app.get("/latest", (_, res) => res.json({ ts: Date.now(), last: lastPayload }));
 

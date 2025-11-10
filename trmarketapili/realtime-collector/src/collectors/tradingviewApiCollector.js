@@ -121,7 +121,7 @@ export async function startTradingviewApiCollector({ market = "turkey", interval
     try {
       const payload = {
         "filter": [
-          {"left": "market", "operation": "equal", "right": market === "turkey" ? "turkey" : market}
+          {"left": "exchange", "operation": "equal", "right": "BIST"}
         ],
         "options": { "lang": "en" },
         "columns": [
@@ -133,15 +133,14 @@ export async function startTradingviewApiCollector({ market = "turkey", interval
         "sort": {"sortBy": "name", "sortOrder": "asc"}
       };
       
-      const response = await fetch(selectedMarket.url, {
+      // Global scanner endpoint daha toleranslıdır; BIST borsasını filtre ile sınırla
+      const response = await fetch("https://scanner.tradingview.com/global/scan", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept': 'text/plain, */*',
-          'Accept-Language': 'en-US,en;q=0.9,tr;q=0.8',
-          'Origin': 'https://www.tradingview.com',
-          'Referer': 'https://www.tradingview.com/'
+          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+          'Accept': 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9,tr;q=0.8'
         },
         body: JSON.stringify(payload)
       });
