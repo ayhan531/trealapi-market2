@@ -48,6 +48,7 @@ export function createSseServer() {
 
   // Ana sayfa - client.html'i göster
   app.get("/", (_, res) => {
+    res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(__dirname, "../public/client.html"));
   });
 
@@ -81,6 +82,7 @@ export function createSseServer() {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no'
     });
 
     // Yeni bağlantıyı kaydet
@@ -93,9 +95,15 @@ export function createSseServer() {
     clients.push(newClient);
     console.log(`[SSE] New client connected: ${clientId}`);
 
-    // İlk bağlantıda mevcut veriyi gönder
+    // İlk bağlantıda mevcut veriyi 'update' event'i ile gönder
     if (lastPayload) {
-      res.write(`data: ${JSON.stringify(lastPayload)}\n\n`);
+      try {
+        const initial = { ts: Date.now(), ...lastPayload };
+        res.write(`event: update\n`);
+        res.write(`data: ${JSON.stringify(initial)}\n\n`);
+      } catch (e) {
+        console.error(`[SSE] Initial send error for client ${clientId}:`, e.message);
+      }
     } else {
       // Eğer hiç veri yoksa, borsanın kapalı olduğunu belirten bir mesaj gönder
       const marketClosedMessage = {
@@ -115,8 +123,9 @@ export function createSseServer() {
       if (res.writableEnded) return;
       
       try {
+        const payload = { ts: Date.now(), ...evt };
         res.write(`event: update\n`);
-        res.write(`data: ${JSON.stringify(evt)}\n\n`);
+        res.write(`data: ${JSON.stringify(payload)}\n\n`);
       } catch (e) {
         console.error(`[SSE] Error sending to client ${clientId}:`, e.message);
       }

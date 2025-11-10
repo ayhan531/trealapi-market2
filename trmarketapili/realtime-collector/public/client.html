@@ -330,9 +330,9 @@
     </header>
 
     <div class="filter-tabs">
-      <button class="filter-tab active" onclick="filterCategory('all')">Tümü</button>
-      <button class="filter-tab" onclick="filterCategory('stocks_tr')">TR Hisse</button>
-      <button class="filter-tab" onclick="filterCategory('indices_tr')">İndeksler</button>
+      <button class="filter-tab active" onclick="filterCategory('all', this)">Tümü</button>
+      <button class="filter-tab" onclick="filterCategory('stocks_tr', this)">TR Hisse</button>
+      <button class="filter-tab" onclick="filterCategory('indices_tr', this)">İndeksler</button>
     </div>
 
     <div class="cards-grid" id="cards"></div>
@@ -694,14 +694,14 @@
       updateCard(symbol);
     }
 
-    function filterCategory(category) {
+    function filterCategory(category, btn) {
       currentFilter = category;
       
       // Tab aktifliğini güncelle
       document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.classList.remove('active');
       });
-      event.target.classList.add('active');
+      if (btn) btn.classList.add('active');
       
       // Kartları filtrele
       document.querySelectorAll('.card').forEach(card => {
