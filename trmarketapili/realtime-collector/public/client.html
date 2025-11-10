@@ -495,11 +495,20 @@
               if (!item || !item.s || !Array.isArray(item.d)) continue;
               const symbol = item.s; // e.g. BIST:XYZ
               const arr = item.d;
-              const price = Number(arr[1]) || 0;          // close
-              const change = Number(arr[3]) || 0;         // change_abs
-              const changePct = Number(arr[2]) || 0;      // change
-              const volume = Number(arr[8]) || 0;         // volume
+              const close = arr[1];              // close
+              const changeAbs = arr[3];          // change_abs
+              const changePctCol = arr[2];       // change (%)
+              const prevClose = arr[7];          // prev_close
+              const volumeCol = arr[8];          // volume
               const description = arr[11] || '';
+
+              // Fallback'lar: kapanış yoksa prev_close kullan; yüzde yoksa change_abs/prev_close hesapla
+              const price = Number((close ?? prevClose) ?? 0) || 0;
+              const change = Number(changeAbs ?? 0) || 0;
+              const computedPct = (price && prevClose) ? (change / Number(prevClose) * 100) : 0;
+              const changePct = Number(changePctCol ?? computedPct) || 0;
+              const volume = Number(volumeCol ?? 0) || 0;
+
               updateSymbolData(symbol, {
                 lp: price,
                 ch: change,
@@ -681,10 +690,19 @@
         }, 500);
       }
       
-      // Verileri birleştir
-      Object.assign(symbolData[symbol], values);
-      symbolData[symbol]._lastUpdate = Date.now();
-      symbolData[symbol]._hasData = true;
+      // Verileri koruyucu şekilde birleştir (0/NaN gelirse eskiyi koru)
+      const current = symbolData[symbol];
+      let updated = false;
+      if (Number.isFinite(values.lp) && values.lp > 0) { current.lp = values.lp; updated = true; }
+      if (Number.isFinite(values.ch)) { current.ch = values.ch; updated = true; }
+      if (Number.isFinite(values.chp)) { current.chp = values.chp; updated = true; }
+      if (Number.isFinite(values.volume) && values.volume >= 0) { current.volume = values.volume; updated = true; }
+      if (typeof values.description === 'string') { current.description = values.description; }
+      if (typeof values.type === 'string') { current.type = values.type; }
+      if (updated) {
+        current._lastUpdate = Date.now();
+        current._hasData = true;
+      }
       
       // Aktif sembol sayısını güncelle
       const activeCount = Object.values(symbolData).filter(s => s._hasData).length;
