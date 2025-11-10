@@ -146,6 +146,11 @@ export async function startTradingviewApiCollector({ market = "turkey", interval
       });
 
       if (!response.ok) {
+        let bodySnippet = '';
+        try {
+          bodySnippet = await response.text();
+        } catch (_) {}
+        console.error(`[TV-API] HTTP ${response.status} yanıtı:`, bodySnippet?.slice(0, 500));
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
