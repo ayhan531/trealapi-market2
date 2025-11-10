@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 import "dotenv/config";
 import { createSseServer } from "./sseServer.js";
 import { startTradingviewApiCollector } from "./collectors/tradingviewApiCollector.js";
+import { bus } from "./bus.js";
 
 
 const PORT = process.env.PORT || 4000;
@@ -21,25 +22,39 @@ const TR_CLOSE_MIN = 30;
 let collectorActive = false;
 let collectorStopper = null;
 
+// Piyasa saati kontrolünü devre dışı bırak, her zaman true döndür
 function isMarketOpen() {
-  // Istanbul saatine göre kontrol et
-  const now = DateTime.now().setZone("Europe/Istanbul");
-  const open = now.set({ hour: TR_OPEN_HOUR, minute: TR_OPEN_MIN, second: 0, millisecond: 0 });
-  const close = now.set({ hour: TR_CLOSE_HOUR, minute: TR_CLOSE_MIN, second: 0, millisecond: 0 });
-  return now >= open && now <= close;
+  return true; // Her zaman piyasa açık gibi davran
 }
 
 let collectorInstance = null;
+let lastMarketData = null;
+
+// Son piyasa verilerini kaydet
+bus.on('data', (data) => {
+  if (data.type === 'market_data' && data.data) {
+    lastMarketData = data;
+  }
+});
+
 async function startCollectorIfNeeded() {
-  if (!collectorActive && isMarketOpen()) {
+  if (!collectorActive) {
     try {
       const market = process.env.TVAPI_MARKET || "turkey";
       const interval = Number(process.env.TVAPI_INTERVAL || 1000);
-      console.log("[BIST] Otomatik başlatılıyor (TR saatiyle 09:00)...");
-      collectorInstance = startTradingviewApiCollector({ market, interval });
+      
+      console.log("[BIST] Veri toplayıcı başlatılıyor (7/24 modu)...");
+      collectorInstance = startTradingviewApiCollector({ 
+        market, 
+        interval,
+        force: true // Borsa kapalı olsa bile veri çek
+      });
+      
       collectorActive = true;
     } catch (e) {
       console.error("[BOOT] error:", e.message);
+      // Hata durumunda 10 saniye sonra tekrar dene
+      setTimeout(startCollectorIfNeeded, 10000);
     }
   }
 }

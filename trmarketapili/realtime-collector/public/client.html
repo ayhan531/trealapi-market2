@@ -113,19 +113,33 @@
     .card {
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);
+      border-radius: 12px;
       padding: 20px;
-      border-radius: 15px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.3s ease;
+      border-left: 4px solid #4f46e5;
+      position: relative;
+      overflow: hidden;
     }
 
-    .card.loading {
-      opacity: 0.6;
+    .market-closed .card {
+      background: rgba(255, 230, 230, 0.9);
+      border-left: 4px solid #ef4444;
+      opacity: 0.9;
+    }
+
+    .market-closed .price {
+      color: #ef4444;
+    }
+
+    .market-closed .change.positive {
+      background: rgba(220, 38, 38, 0.1);
+      color: #dc2626;
     }
 
     .card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
     }
 
     .card-header {
@@ -293,9 +307,10 @@
   </style>
 </head>
 <body>
+  <div id="market-status" class="market-status">Piyasa Durumu Yükleniyor...</div>
   <div class="container">
     <header>
-      <h1>📊 TradingView Realtime Data</h1>
+      <h1>📊 Borsa İstanbul Anlık Veriler</h1>
       <div class="header-controls">
         <div class="stats">
           <div class="stat-item">
@@ -457,10 +472,45 @@
           
           // Log'a ekle
           const time = new Date(data.ts).toLocaleTimeString('tr-TR');
-          const logEntry = `[${time}] ${JSON.stringify(data.payload).slice(0, 300)}`;
+          const payloadPreview = (() => {
+            try {
+              const val = (data && 'payload' in data) ? data.payload : data;
+              const str = JSON.stringify(val);
+              return typeof str === 'string' ? str.slice(0, 300) : String(val).slice(0, 300);
+            } catch (_) {
+              try {
+                return String(data.payload ?? data).slice(0, 300);
+              } catch (__) {
+                return '';
+              }
+            }
+          })();
+          const logEntry = `[${time}] ${payloadPreview}`;
           const lines = logEl.textContent.split('\n');
           logEl.textContent = logEntry + '\n' + lines.slice(0, 100).join('\n');
           
+          // TradingView Screener market_data (batch)
+          if (data.type === 'market_data' && Array.isArray(data.data)) {
+            for (const item of data.data) {
+              if (!item || !item.s || !Array.isArray(item.d)) continue;
+              const symbol = item.s; // e.g. BIST:XYZ
+              const arr = item.d;
+              const price = Number(arr[1]) || 0;          // close
+              const change = Number(arr[3]) || 0;         // change_abs
+              const changePct = Number(arr[2]) || 0;      // change
+              const volume = Number(arr[8]) || 0;         // volume
+              const description = arr[11] || '';
+              updateSymbolData(symbol, {
+                lp: price,
+                ch: change,
+                chp: changePct,
+                volume: volume,
+                description: description,
+                type: (arr[12] || '').toString()
+              });
+            }
+          }
+
           // Quote data parse et (TradingView WebSocket)
           if (data.payload && data.payload.name === "qsd") {
             const quote = data.payload.params[1];
@@ -677,6 +727,38 @@
     function clearLog() {
       logEl.textContent = 'Log temizlendi...';
     }
+
+    // Piyasa durumunu kontrol et ve güncelle
+    function checkMarketStatus() {
+      const now = new Date();
+      const day = now.getDay();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      
+      // Hafta sonu kontrolü (0: Pazar, 6: Cumartesi)
+      const isWeekend = day === 0 || day === 6;
+      
+      // Piyasa saatleri: Hafta içi 09:00-18:30
+      const isMarketOpen = !isWeekend && 
+                          (hours > 9 || (hours === 9 && minutes >= 0)) && 
+                          (hours < 18 || (hours === 18 && minutes <= 30));
+      
+      const marketStatusElement = document.getElementById('market-status');
+      
+      if (isMarketOpen) {
+        document.body.classList.remove('market-closed');
+        marketStatusElement.textContent = 'Piyasa Açık';
+        marketStatusElement.style.background = '#10b981';
+      } else {
+        document.body.classList.add('market-closed');
+        marketStatusElement.textContent = 'Piyasa Kapalı';
+        marketStatusElement.style.background = '#ef4444';
+      }
+    }
+
+    // Her dakikada bir piyasa durumunu kontrol et
+    checkMarketStatus();
+    setInterval(checkMarketStatus, 60000);
 
     // Başlat
     initializeSymbols();

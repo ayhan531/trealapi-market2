@@ -69,36 +69,62 @@ export function createSseServer() {
     return trNow >= open && trNow <= close;
   }
 
-  // SSE endpointi
-  app.get("/stream", (req, res) => {
-    res.set({
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
-      "X-Accel-Buffering": "no"
-    });
-    res.flushHeaders();
+  let clients = [];
 
-    // Market kapalıysa hemen mesaj gönder ve terminale log bas
-    if (!isMarketOpen()) {
-      const msg = "[BIST] Borsa kapalı. Türkiye saatiyle 09:00-18:30 arası canlı veri yayını yapılır.";
-      res.write(`event: market_closed\n`);
-      res.write(`data: {"message": "Borsa kapalı. Türkiye saatiyle 09:00-18:30 arası canlı veri yayını yapılır."}\n\n`);
-      console.log(msg);
+  // EventSource bağlantısı
+  app.get("/stream", (req, res) => {
+    // SSE başlıklarını ayarla
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+
+    // Yeni bağlantıyı kaydet
+    const clientId = Date.now();
+    const newClient = {
+      id: clientId,
+      res
+    };
+
+    clients.push(newClient);
+    console.log(`[SSE] New client connected: ${clientId}`);
+
+    // İlk bağlantıda mevcut veriyi gönder
+    if (lastPayload) {
+      res.write(`data: ${JSON.stringify(lastPayload)}\n\n`);
+    } else {
+      // Eğer hiç veri yoksa, borsanın kapalı olduğunu belirten bir mesaj gönder
+      const marketClosedMessage = {
+        type: 'market_closed',
+        message: 'Borsa kapalı. Türkiye saatiyle 09:00-18:30 arası canlı veri yayını yapılır.'
+      };
+      res.write(`event: market_closed\ndata: ${JSON.stringify(marketClosedMessage)}\n\n`);
     }
 
+    // Bağlantının açık kalmasını sağla
     const keepAlive = setInterval(() => {
       res.write(`: ping ${Date.now()}\n\n`);
     }, 15000);
 
+    // Veri geldiğinde sadece bu bağlantıya gönder
     const onData = (evt) => {
-      res.write(`event: update\n`);
-      res.write(`data: ${JSON.stringify(evt)}\n\n`);
+      if (res.writableEnded) return;
+      
+      try {
+        res.write(`event: update\n`);
+        res.write(`data: ${JSON.stringify(evt)}\n\n`);
+      } catch (e) {
+        console.error(`[SSE] Error sending to client ${clientId}:`, e.message);
+      }
     };
 
     bus.on("data", onData);
 
-    req.on("close", () => {
+    // Bağlantı kapatıldığında temizlik yap
+    req.on('close', () => {
+      console.log(`[SSE] Client ${clientId} disconnected`);
+      clients = clients.filter(client => client.id !== clientId);
       clearInterval(keepAlive);
       bus.off("data", onData);
     });
