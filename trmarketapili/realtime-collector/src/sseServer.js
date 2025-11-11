@@ -2,7 +2,7 @@ import express from "express";
 import { bus, lastPayload } from "./bus.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getIntervalMs, setIntervalMs, getOverrides, setOverride, removeOverride } from "./config.js";
+import { getIntervalMs, setIntervalMs, getOverrides, setOverride, removeOverride, getPaused, setPaused } from "./config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,7 +36,7 @@ export function createSseServer() {
       return res.status(403).json({ error: 'Forbidden: Origin not allowed' });
     }
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
     } else {
@@ -68,7 +68,7 @@ export function createSseServer() {
   });
 
   app.get("/admin/api/config", async (_, res) => {
-    res.json({ intervalMs: getIntervalMs(), overrides: getOverrides() });
+    res.json({ intervalMs: getIntervalMs(), overrides: getOverrides(), paused: getPaused() });
   });
 
   app.post("/admin/api/interval", async (req, res) => {
@@ -77,9 +77,18 @@ export function createSseServer() {
   });
 
   app.post("/admin/api/override", async (req, res) => {
-    const { symbol, type, value } = req.body || {};
+    const { symbol, type, value, durationSec, expiresAt } = req.body || {};
     if (!symbol || !type) return res.status(400).json({ ok: false, error: 'bad_request' });
-    await setOverride(symbol, { type, value: Number(value) });
+    let exp = 0;
+    const now = Date.now();
+    if (Number(expiresAt)) {
+      exp = Number(expiresAt);
+    } else if (Number(durationSec)) {
+      exp = now + Number(durationSec) * 1000;
+    }
+    const payload = { type, value: Number(value) };
+    if (exp > now) payload.expiresAt = exp;
+    await setOverride(symbol, payload);
     res.json({ ok: true });
   });
 
@@ -87,6 +96,12 @@ export function createSseServer() {
     const symbol = req.params.symbol;
     await removeOverride(symbol);
     res.json({ ok: true });
+  });
+
+  app.post("/admin/api/pause", async (req, res) => {
+    const paused = !!(req.body && (req.body.paused === true || req.body.paused === 'true'));
+    const v = await setPaused(paused);
+    res.json({ ok: true, paused: v });
   });
 
 

@@ -3,7 +3,7 @@ import { bus } from "../bus.js";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { getIntervalMs, getOverrides } from "../config.js";
+import { getIntervalMs, getOverrides, getPaused } from "../config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -117,6 +117,10 @@ export async function startTradingviewApiCollector({ market = "turkey", interval
   // Tüm sembolleri çek
   async function fetchAllSymbols() {
     if (!isRunning) return 0;
+    if (getPaused && getPaused()) {
+      console.log("[TV-API] Paused - veri çekimi atlandı");
+      return 0;
+    }
     
     console.log(`[TV-API] Veri çekiliyor: ${selectedMarket.name} (${new Date().toLocaleTimeString('tr-TR')})`);
     
@@ -247,14 +251,22 @@ export async function startTradingviewApiCollector({ market = "turkey", interval
   }
 
   // İlk çekimi yap
-  await fetchAllSymbols();
+  if (!getPaused || !getPaused()) {
+    await fetchAllSymbols();
+  } else {
+    console.log("[TV-API] Başlangıçta paused - ilk çekim atlandı");
+  }
   
   // Periyodik olarak verileri güncelle
   const updateData = async () => {
     if (!isRunning) return;
     
     try {
-      await fetchAllSymbols();
+      if (!getPaused || !getPaused()) {
+        await fetchAllSymbols();
+      } else {
+        console.log("[TV-API] Paused - döngüde çekim atlandı");
+      }
     } catch (error) {
       console.error("[TV-API] Güncelleme hatası:", error.message);
     } finally {
