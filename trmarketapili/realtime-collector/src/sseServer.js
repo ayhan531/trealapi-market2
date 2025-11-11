@@ -80,10 +80,14 @@ export function createSseServer() {
     // SSE başlıklarını ayarla
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no'
+      'X-Accel-Buffering': 'no',
+      'Keep-Alive': 'timeout=60',
+      'Alt-Svc': 'clear'
     });
+
+    try { res.flushHeaders(); } catch (_) {}
 
     // Yeni bağlantıyı kaydet
     const clientId = Date.now();
@@ -136,6 +140,13 @@ export function createSseServer() {
     // Bağlantı kapatıldığında temizlik yap
     req.on('close', () => {
       console.log(`[SSE] Client ${clientId} disconnected`);
+      clients = clients.filter(client => client.id !== clientId);
+      clearInterval(keepAlive);
+      bus.off("data", onData);
+    });
+
+    req.on('aborted', () => {
+      console.log(`[SSE] Client ${clientId} aborted`);
       clients = clients.filter(client => client.id !== clientId);
       clearInterval(keepAlive);
       bus.off("data", onData);
