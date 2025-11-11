@@ -2,6 +2,7 @@ import express from "express";
 import { bus, lastPayload } from "./bus.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { getIntervalMs, setIntervalMs, getOverrides, setOverride, removeOverride } from "./config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,6 +61,33 @@ export function createSseServer() {
 
   // Son payload'ı JSON olarak ver (debug)
   app.get("/latest", (_, res) => res.json({ ts: Date.now(), last: lastPayload }));
+
+  app.get("/admin", (_, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(path.join(__dirname, "../public/admin.html"));
+  });
+
+  app.get("/admin/api/config", async (_, res) => {
+    res.json({ intervalMs: getIntervalMs(), overrides: getOverrides() });
+  });
+
+  app.post("/admin/api/interval", async (req, res) => {
+    const n = await setIntervalMs(req.body?.intervalMs);
+    res.json({ ok: true, intervalMs: n });
+  });
+
+  app.post("/admin/api/override", async (req, res) => {
+    const { symbol, type, value } = req.body || {};
+    if (!symbol || !type) return res.status(400).json({ ok: false, error: 'bad_request' });
+    await setOverride(symbol, { type, value: Number(value) });
+    res.json({ ok: true });
+  });
+
+  app.delete("/admin/api/override/:symbol", async (req, res) => {
+    const symbol = req.params.symbol;
+    await removeOverride(symbol);
+    res.json({ ok: true });
+  });
 
 
   // Türkiye saatine göre market açık mı kontrolü için fonksiyon ekle

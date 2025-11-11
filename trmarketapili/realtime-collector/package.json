@@ -16,7 +16,8 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "luxon": "^3.7.2",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "ioredis": "^5.3.2"
   },
   "keywords": ["bist", "trading", "api", "realtime", "stock-market"],
   "author": "TR Market API",

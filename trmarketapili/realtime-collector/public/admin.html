@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu; background:#0f172a; color:#e2e8f0; padding:24px; }
+    .card { background:#111827; border:1px solid #1f2937; border-radius:12px; padding:16px; margin-bottom:16px; }
+    h1 { font-size:22px; margin-bottom:16px; }
+    h2 { font-size:18px; margin: 0 0 12px; }
+    label { display:block; font-size:13px; margin:8px 0 6px; color:#94a3b8; }
+    input, select { width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0b1220; color:#e2e8f0; }
+    button { background:#2563eb; border:none; color:#fff; padding:10px 14px; border-radius:8px; cursor:pointer; }
+    button.danger { background:#ef4444; }
+    .row { display:flex; gap:12px; }
+    .row > div { flex:1; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:10px; border-bottom:1px solid #1f2937; font-size:14px; }
+    .muted { color:#94a3b8; font-size:12px; }
+  </style>
+</head>
+<body>
+  <h1>Admin Panel</h1>
+
+  <div class="card">
+    <h2>Çekim Aralığı</h2>
+    <div class="row">
+      <div>
+        <label>Güncelleme Aralığı (ms)</label>
+        <input type="number" id="intervalMs" min="200" step="100" />
+        <div class="muted">Borsa açıkken kullanılacak. Minimum 200ms.</div>
+      </div>
+      <div style="align-self:end;">
+        <button id="saveInterval">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Fiyat Override</h2>
+    <div class="row">
+      <div>
+        <label>Sembol (örn: BIST:ASELS)</label>
+        <input id="ovSymbol" placeholder="BIST:XXXX" />
+      </div>
+      <div>
+        <label>Tip</label>
+        <select id="ovType">
+          <option value="set">Set (direkt fiyat)</option>
+          <option value="delta">Delta (ekle/çıkar)</option>
+          <option value="percent">Percent (yüzde)</option>
+        </select>
+      </div>
+      <div>
+        <label>Değer</label>
+        <input id="ovValue" type="number" step="0.0001" />
+      </div>
+      <div style="align-self:end;">
+        <button id="addOverride">Ekle/Güncelle</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Aktif Override'lar</h2>
+    <table>
+      <thead>
+        <tr><th>Sembol</th><th>Tip</th><th>Değer</th><th></th></tr>
+      </thead>
+      <tbody id="list"></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadConfig() {
+      const res = await fetch('/admin/api/config');
+      const json = await res.json();
+      document.getElementById('intervalMs').value = json.intervalMs ?? 1000;
+      renderOverrides(json.overrides || {});
+    }
+
+    function renderOverrides(ov) {
+      const tbody = document.getElementById('list');
+      tbody.innerHTML = '';
+      const entries = Object.entries(ov);
+      if (entries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">Kayıt yok</td></tr>';
+        return;
+      }
+      for (const [symbol, v] of entries) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${symbol}</td><td>${v.type}</td><td>${v.value}</td>
+          <td style="text-align:right;"><button class="danger" data-sym="${symbol}">Sil</button></td>`;
+        tbody.appendChild(tr);
+      }
+      tbody.querySelectorAll('button.danger').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const sym = btn.getAttribute('data-sym');
+          if (!confirm(sym + ' override silinsin mi?')) return;
+          await fetch('/admin/api/override/' + encodeURIComponent(sym), { method: 'DELETE' });
+          loadConfig();
+        });
+      });
+    }
+
+    document.getElementById('saveInterval').addEventListener('click', async () => {
+      const ms = Number(document.getElementById('intervalMs').value || 1000);
+      await fetch('/admin/api/interval', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalMs: ms })
+      });
+      alert('Kaydedildi');
+    });
+
+    document.getElementById('addOverride').addEventListener('click', async () => {
+      const symbol = document.getElementById('ovSymbol').value.trim();
+      const type = document.getElementById('ovType').value;
+      const value = Number(document.getElementById('ovValue').value);
+      if (!symbol) { alert('Sembol zorunlu'); return; }
+      await fetch('/admin/api/override', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, type, value })
+      });
+      document.getElementById('ovValue').value = '';
+      loadConfig();
+    });
+
+    loadConfig();
+  </script>
+</body>
+</html>

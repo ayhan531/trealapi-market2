@@ -3,6 +3,7 @@ import { bus } from "../bus.js";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { getIntervalMs, getOverrides } from "../config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,7 +53,8 @@ export async function startTradingviewApiCollector({ market = "turkey", interval
     close.setHours(18, 30, 0, 0);
 
     const withinMarket = trNow >= open && trNow <= close;
-    const next = withinMarket ? interval : SLOW_INTERVAL;
+    const adminInterval = Number(getIntervalMs());
+    const next = withinMarket ? (adminInterval || interval) : SLOW_INTERVAL;
     return next;
   }
   
@@ -160,11 +162,34 @@ export async function startTradingviewApiCollector({ market = "turkey", interval
         throw new Error("Geçersiz veri formatı alındı");
       }
 
-      const processedData = data.data.map(item => ({
-        s: item.s, // Full symbol like "BIST:ADEL"
-        d: item.d, // All raw columns
-        isMarketClosed: false
-      }));
+      const overrides = getOverrides();
+      const processedData = data.data.map(item => {
+        const symbol = item.s;
+        const arr = Array.isArray(item.d) ? [...item.d] : item.d;
+        const ovr = overrides && overrides[symbol];
+        if (ovr && Array.isArray(arr)) {
+          const close = arr[1];
+          const prevClose = arr[7];
+          let newClose = Number(close) || 0;
+          if (ovr.type === 'set') newClose = Number(ovr.value) || newClose;
+          if (ovr.type === 'delta') newClose = newClose + Number(ovr.value || 0);
+          if (ovr.type === 'percent') newClose = newClose * (1 + Number(ovr.value || 0) / 100);
+          if (newClose > 0) {
+            arr[1] = newClose;
+            if (Number(prevClose)) {
+              const chAbs = newClose - Number(prevClose);
+              const chPct = (chAbs / Number(prevClose)) * 100;
+              arr[2] = chPct;
+              arr[3] = chAbs;
+            }
+          }
+        }
+        return {
+          s: symbol,
+          d: arr,
+          isMarketClosed: false
+        };
+      });
 
       // Veriyi işle ve yayınla
       const marketData = {
