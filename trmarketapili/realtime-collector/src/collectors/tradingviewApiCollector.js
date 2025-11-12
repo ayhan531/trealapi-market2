@@ -282,9 +282,22 @@ export async function startTradingviewApiCollector({ market = "turkey", interval
   // İlk güncellemeyi başlat
   setTimeout(updateData, getNextIntervalMs());
   
+  // Yeni istemci bağlandığında anlık güncelleme isteğini işle
+  let lastImmediateReq = 0;
+  const onRequestUpdate = () => {
+    if (!isRunning) return;
+    if (getPaused && getPaused()) return;
+    const now = Date.now();
+    if (now - lastImmediateReq < 2000) return;
+    lastImmediateReq = now;
+    fetchAllSymbols().catch(() => {});
+  };
+  bus.on("request_update", onRequestUpdate);
+
   // Temizlik fonksiyonu
   return () => {
     isRunning = false;
+    bus.off("request_update", onRequestUpdate);
     console.log("[TV-API] Veri toplayıcı durduruldu");
   };
 }

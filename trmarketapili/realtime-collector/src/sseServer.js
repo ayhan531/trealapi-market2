@@ -141,6 +141,8 @@ export function createSseServer() {
 
     clients.push(newClient);
     console.log(`[SSE] New client connected: ${clientId}`);
+    // Yeni bir istemci bağlandığında collector'dan anlık güncelleme iste
+    try { bus.emit("request_update"); } catch (_) {}
 
     // İlk bağlantıda mevcut veriyi 'update' event'i ile gönder
     if (lastPayload) {
