@@ -363,6 +363,13 @@
     let pendingCards = [];
     let batchTimeout = null;
 
+    const qs = new URLSearchParams(location.search);
+    const api = qs.get('api') || (typeof window !== 'undefined' && window.SSE_BASE) || '';
+    function getSseUrl() {
+      const base = api ? api.replace(/\/+$/, '') : '';
+      return base ? `${base}/stream` : '/stream';
+    }
+
     // Sembolleri başlat - Artık başlangıçta boş
     function initializeSymbols() {
       // Başlangıçta hiçbir şey yapma, dinamik olarak eklenecek
@@ -454,7 +461,7 @@
 
     function connect() {
       if (es) es.close();
-      es = new EventSource("/stream");
+      es = new EventSource(getSseUrl());
       
       es.onopen = () => {
         statusEl.textContent = "Bağlı ✅";
