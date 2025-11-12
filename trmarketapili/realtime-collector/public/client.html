@@ -370,6 +370,52 @@
       return base ? `${base}/stream` : '/stream';
     }
 
+    function getBaseUrl() {
+      return api ? api.replace(/\/+$/, '') : '';
+    }
+
+    function processMarketData(data) {
+      if (data && data.type === 'market_data' && Array.isArray(data.data)) {
+        for (const item of data.data) {
+          if (!item || !item.s || !Array.isArray(item.d)) continue;
+          const symbol = item.s; // e.g. BIST:XYZ
+          const arr = item.d;
+          const close = arr[1];              // close
+          const changeAbs = arr[3];          // change_abs
+          const changePctCol = arr[2];       // change (%)
+          const prevClose = arr[7];          // prev_close
+          const volumeCol = arr[8];          // volume
+          const description = arr[11] || '';
+
+          const price = Number((close ?? prevClose) ?? 0) || 0;
+          const change = Number(changeAbs ?? 0) || 0;
+          const computedPct = (price && prevClose) ? (change / Number(prevClose) * 100) : 0;
+          const changePct = Number(changePctCol ?? computedPct) || 0;
+          const volume = Number(volumeCol ?? 0) || 0;
+
+          updateSymbolData(symbol, {
+            lp: price,
+            ch: change,
+            chp: changePct,
+            volume: volume,
+            description: description,
+            type: (arr[12] || '').toString()
+          });
+        }
+      }
+    }
+
+    async function fetchLatest() {
+      try {
+        const url = `${getBaseUrl()}/latest` || '/latest';
+        const resp = await fetch(url, { cache: 'no-store' });
+        const json = await resp.json();
+        if (json && json.last) {
+          processMarketData(json.last);
+        }
+      } catch (_) {}
+    }
+
     // Sembolleri başlat - Artık başlangıçta boş
     function initializeSymbols() {
       // Başlangıçta hiçbir şey yapma, dinamik olarak eklenecek
@@ -471,6 +517,8 @@
       es.onerror = () => {
         statusEl.textContent = "Bağlantı Hatası ❌";
         statusDot.classList.add("disconnected");
+        try { es.close(); } catch (_) {}
+        setTimeout(connect, 3000);
       };
       
       es.addEventListener("update", (e) => {
@@ -787,6 +835,7 @@
 
     // Başlat
     initializeSymbols();
+    fetchLatest();
     connect();
   </script>
 </body>
