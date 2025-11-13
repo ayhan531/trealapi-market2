@@ -104,6 +104,14 @@ export function createSseServer() {
     res.json({ ok: true, paused: v });
   });
 
+  // İsteğe bağlı olarak anlık güncelleme tetikle
+  app.post("/admin/api/request-update", async (_req, res) => {
+    try {
+      bus.emit("request_update");
+    } catch (_) {}
+    res.json({ ok: true });
+  });
+
 
   // Türkiye saatine göre market açık mı kontrolü için fonksiyon ekle
   function isMarketOpen() {

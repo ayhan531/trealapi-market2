@@ -430,6 +430,13 @@
       }
     }
 
+    async function requestImmediateUpdateOnce() {
+      try {
+        const url = `${getBaseUrl()}/admin/api/request-update` || '/admin/api/request-update';
+        await fetch(url, { method: 'POST' });
+      } catch (_) {}
+    }
+
     // Sembolleri başlat - Artık başlangıçta boş
     function initializeSymbols() {
       // Başlangıçta hiçbir şey yapma, dinamik olarak eklenecek
@@ -849,7 +856,8 @@
 
     // Başlat
     initializeSymbols();
-    bootstrapLatestWithRetry();
+    bootstrapLatestWithRetry(60000);
+    requestImmediateUpdateOnce();
     connect();
   </script>
 </body>
