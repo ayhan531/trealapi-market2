@@ -13,6 +13,16 @@ export function createSseServer() {
   // JSON body parser (header'ları okumak için)
   app.use(express.json());
 
+  // API Key koruması (ENV'de API_KEY varsa aktif)
+  const API_KEY = process.env.API_KEY;
+  const requireApiKey = (req, res, next) => {
+    if (!API_KEY) return next();
+    const headerKey = req.headers['x-api-key'];
+    const queryKey = req.query && req.query.key;
+    if (headerKey === API_KEY || queryKey === API_KEY) return next();
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing API Key' });
+  };
+
   // API Key kontrolü devre dışı bırakıldı - herkes erişebilir
   // app.use((req, res, next) => {
   //   const apiKey = req.headers['x-api-key'];
@@ -52,7 +62,7 @@ export function createSseServer() {
     etag: true
   }));
 
-  // Ana sayfa - client.html'i göster
+  // Ana sayfa - client.html'i göster (public)
   app.get("/", (_, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(__dirname, "../public/client.html"));
@@ -64,24 +74,24 @@ export function createSseServer() {
   // Favicon isteğini 404 yerine 204 ile cevapla
   app.get('/favicon.ico', (_, res) => res.status(204).end());
 
-  // Son payload'ı JSON olarak ver (debug)
-  app.get("/latest", (_, res) => res.json({ ts: Date.now(), last: lastPayload }));
+  // Son payload'ı JSON olarak ver (API key ile korunur)
+  app.get("/latest", requireApiKey, (_, res) => res.json({ ts: Date.now(), last: lastPayload }));
 
-  app.get("/admin", (_, res) => {
+  app.get("/admin", requireApiKey, (_, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(__dirname, "../public/admin.html"));
   });
 
-  app.get("/admin/api/config", async (_, res) => {
+  app.get("/admin/api/config", requireApiKey, async (_, res) => {
     res.json({ intervalMs: getIntervalMs(), overrides: getOverrides(), paused: getPaused() });
   });
 
-  app.post("/admin/api/interval", async (req, res) => {
+  app.post("/admin/api/interval", requireApiKey, async (req, res) => {
     const n = await setIntervalMs(req.body?.intervalMs);
     res.json({ ok: true, intervalMs: n });
   });
 
-  app.post("/admin/api/override", async (req, res) => {
+  app.post("/admin/api/override", requireApiKey, async (req, res) => {
     const { symbol, type, value, durationSec, expiresAt } = req.body || {};
     if (!symbol || !type) return res.status(400).json({ ok: false, error: 'bad_request' });
     let exp = 0;
@@ -97,20 +107,20 @@ export function createSseServer() {
     res.json({ ok: true });
   });
 
-  app.delete("/admin/api/override/:symbol", async (req, res) => {
+  app.delete("/admin/api/override/:symbol", requireApiKey, async (req, res) => {
     const symbol = req.params.symbol;
     await removeOverride(symbol);
     res.json({ ok: true });
   });
 
-  app.post("/admin/api/pause", async (req, res) => {
+  app.post("/admin/api/pause", requireApiKey, async (req, res) => {
     const paused = !!(req.body && (req.body.paused === true || req.body.paused === 'true'));
     const v = await setPaused(paused);
     res.json({ ok: true, paused: v });
   });
 
   // İsteğe bağlı olarak anlık güncelleme tetikle
-  app.post("/admin/api/request-update", async (_req, res) => {
+  app.post("/admin/api/request-update", requireApiKey, async (_req, res) => {
     try {
       bus.emit("request_update");
     } catch (_) {}
@@ -132,7 +142,7 @@ export function createSseServer() {
   let clients = [];
 
   // EventSource bağlantısı
-  app.get("/stream", (req, res) => {
+  app.get("/stream", requireApiKey, (req, res) => {
     // SSE başlıklarını ayarla
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
