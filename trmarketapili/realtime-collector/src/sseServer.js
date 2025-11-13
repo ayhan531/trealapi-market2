@@ -44,8 +44,13 @@ export function createSseServer() {
     }
   });
 
-  // Statik test istemcisi
-  app.use(express.static(path.join(__dirname, "../public")));
+  // Statik test istemcisi (uzun süreli cache - HTML hariç)
+  app.use(express.static(path.join(__dirname, "../public"), {
+    maxAge: '365d',
+    immutable: true,
+    index: false,
+    etag: true
+  }));
 
   // Ana sayfa - client.html'i göster
   app.get("/", (_, res) => {

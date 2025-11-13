@@ -362,6 +362,10 @@
     let currentFilter = 'all';
     let pendingCards = [];
     let batchTimeout = null;
+    const pendingUpdates = new Map();
+    let rafScheduled = false;
+    const LOG_BUFFER = [];
+    let logFlushScheduled = false;
 
     const qs = new URLSearchParams(location.search);
     let api = qs.get('api') || (typeof window !== 'undefined' && window.SSE_BASE) || localStorage.getItem('SSE_BASE') || '';
@@ -410,8 +414,13 @@
 
     async function fetchLatest() {
       try {
-        const url = `${getBaseUrl()}/latest` || '/latest';
-        const resp = await fetch(url, { cache: 'no-store' });
+        const base = getBaseUrl();
+        const primary = `${base}/latest`;
+        let resp = await fetch(primary, { cache: 'no-store' });
+        if (!resp.ok && base) {
+          // fallback to relative if absolute failed
+          resp = await fetch('/latest', { cache: 'no-store' });
+        }
         const json = await resp.json();
         if (json && json.last) {
           processMarketData(json.last);
@@ -432,8 +441,44 @@
 
     async function requestImmediateUpdateOnce() {
       try {
-        const url = `${getBaseUrl()}/admin/api/request-update` || '/admin/api/request-update';
-        await fetch(url, { method: 'POST' });
+        const base = getBaseUrl();
+        const url = `${base}/admin/api/request-update`;
+        let resp = await fetch(url, { method: 'POST' });
+        if (!resp.ok && base) {
+          await fetch('/admin/api/request-update', { method: 'POST' });
+        }
+      } catch (_) {}
+    }
+
+    async function validateAndSetBase() {
+      // verify current base works via /health, otherwise clear to relative
+      const base = getBaseUrl();
+      if (!base) return;
+      try {
+        const resp = await fetch(`${base}/health`, { cache: 'no-store' });
+        if (!resp.ok) throw new Error('health not ok');
+        try { localStorage.setItem('SSE_BASE', base); } catch (_) {}
+      } catch (_) {
+        // clear invalid base
+        api = '';
+        try { localStorage.removeItem('SSE_BASE'); } catch (_) {}
+      }
+    }
+
+    async function ensureUnpaused() {
+      try {
+        const base = getBaseUrl();
+        let resp = await fetch(`${base}/admin/api/config`, { cache: 'no-store' });
+        if (!resp.ok && base) resp = await fetch('/admin/api/config', { cache: 'no-store' });
+        const cfg = await resp.json();
+        if (cfg && cfg.paused === true) {
+          const body = JSON.stringify({ paused: false });
+          const headers = { 'Content-Type': 'application/json' };
+          try {
+            let r = await fetch(`${base}/admin/api/pause`, { method: 'POST', headers, body });
+            if (!r.ok && base) await fetch('/admin/api/pause', { method: 'POST', headers, body });
+          } catch (_) {}
+        }
       } catch (_) {}
     }
 
@@ -526,6 +571,26 @@
       `;
     }
 
+    function scheduleUpdate(symbol) {
+      pendingUpdates.set(symbol, true);
+      if (rafScheduled) return;
+      rafScheduled = true;
+      requestAnimationFrame(() => {
+        rafScheduled = false;
+        // Chunk updates to avoid long tasks
+        const symbols = Array.from(pendingUpdates.keys());
+        pendingUpdates.clear();
+        const chunkSize = 100;
+        let i = 0;
+        function applyChunk() {
+          const end = Math.min(i + chunkSize, symbols.length);
+          for (; i < end; i++) updateCard(symbols[i]);
+          if (i < symbols.length) requestAnimationFrame(applyChunk);
+        }
+        applyChunk();
+      });
+    }
+
     function connect() {
       if (es) es.close();
       es = new EventSource(getSseUrl());
@@ -561,9 +626,16 @@
               }
             }
           })();
-          const logEntry = `[${time}] ${payloadPreview}`;
-          const lines = logEl.textContent.split('\n');
-          logEl.textContent = logEntry + '\n' + lines.slice(0, 100).join('\n');
+          // Throttled log buffer (max 50 lines)
+          LOG_BUFFER.unshift(`[${time}] ${payloadPreview}`);
+          if (LOG_BUFFER.length > 50) LOG_BUFFER.length = 50;
+          if (!logFlushScheduled) {
+            logFlushScheduled = true;
+            setTimeout(() => {
+              logFlushScheduled = false;
+              logEl.textContent = LOG_BUFFER.join('\n');
+            }, 250);
+          }
           
           // TradingView Screener market_data (batch)
           if (data.type === 'market_data' && Array.isArray(data.data)) {
@@ -784,8 +856,8 @@
       const activeCount = Object.values(symbolData).filter(s => s._hasData).length;
       activeSymbolsEl.textContent = activeCount;
       
-      // Sadece ilgili kartı güncelle
-      updateCard(symbol);
+      // Sadece ilgili kartı güncelle (batched)
+      scheduleUpdate(symbol);
     }
 
     function filterCategory(category, btn) {
@@ -856,9 +928,13 @@
 
     // Başlat
     initializeSymbols();
-    bootstrapLatestWithRetry(60000);
-    requestImmediateUpdateOnce();
-    connect();
+    (async function start() {
+      await validateAndSetBase();
+      await ensureUnpaused();
+      await requestImmediateUpdateOnce();
+      await bootstrapLatestWithRetry(60000);
+      connect();
+    })();
   </script>
 </body>
 </html>
