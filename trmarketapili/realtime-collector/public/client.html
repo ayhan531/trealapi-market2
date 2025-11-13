@@ -436,9 +436,10 @@
       return false;
     }
 
-    async function bootstrapLatestWithRetry(maxMs = 15000) {
+    async function bootstrapLatestWithRetry(maxMs = 15000, signal) {
       const start = Date.now();
       while (Date.now() - start < maxMs) {
+        if (signal && signal.aborted) return;
         const ok = await fetchLatest();
         if (ok) return;
         await new Promise(r => setTimeout(r, 2000));
@@ -597,6 +598,8 @@
       });
     }
 
+    let firstSseDelivered = false;
+    let latestAbort = null;
     function connect() {
       if (es) es.close();
       es = new EventSource(getSseUrl());
@@ -615,6 +618,8 @@
       
       es.addEventListener("update", (e) => {
         try {
+          if (!firstSseDelivered && latestAbort) { try { latestAbort.abort(); } catch(_) {} }
+          firstSseDelivered = true;
           const data = JSON.parse(e.data);
           
           // Log'a ekle
@@ -936,10 +941,13 @@
     initializeSymbols();
     (async function start() {
       await validateAndSetBase();
-      await ensureUnpaused();
-      await requestImmediateUpdateOnce();
-      await bootstrapLatestWithRetry(60000);
+      // SSE'yi hemen aç (kritik yolu kısalt)
       connect();
+      // /latest bootstrap'ı paralel başlat ve SSE ilk data gelince iptal et
+      latestAbort = new AbortController();
+      bootstrapLatestWithRetry(60000, latestAbort.signal);
+      // Arkaplanda paused kapat ve anlık güncelleme tetikle
+      setTimeout(() => { ensureUnpaused(); requestImmediateUpdateOnce(); }, 0);
     })();
   </script>
 </body>

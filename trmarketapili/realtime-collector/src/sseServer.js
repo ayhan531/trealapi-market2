@@ -1,4 +1,5 @@
 import express from "express";
+import compression from "compression";
 import { bus, lastPayload } from "./bus.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -12,6 +13,15 @@ export function createSseServer() {
 
   // JSON body parser (header'ları okumak için)
   app.use(express.json());
+
+  // HTTP sıkıştırma (SSE hariç)
+  app.use(compression({
+    filter: (req, res) => {
+      const type = res.getHeader('Content-Type');
+      if (type && typeof type === 'string' && type.includes('text/event-stream')) return false;
+      return compression.filter(req, res);
+    }
+  }));
 
   // API Key koruması (ENV'de API_KEY varsa aktif)
   const API_KEY = process.env.API_KEY;
