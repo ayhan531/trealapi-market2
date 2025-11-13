@@ -366,6 +366,10 @@
     let rafScheduled = false;
     const LOG_BUFFER = [];
     let logFlushScheduled = false;
+    const INITIAL_LIMIT = 200;      // İlk render limiti
+    const DEFER_BATCH = 200;        // Arka plan eklenecek kart sayısı
+    let createdCount = 0;
+    let deferredCards = [];
 
     const qs = new URLSearchParams(location.search);
     let api = qs.get('api') || (typeof window !== 'undefined' && window.SSE_BASE) || localStorage.getItem('SSE_BASE') || '';
@@ -628,10 +632,10 @@
             try {
               const val = (data && 'payload' in data) ? data.payload : data;
               const str = JSON.stringify(val);
-              return typeof str === 'string' ? str.slice(0, 300) : String(val).slice(0, 300);
+              return typeof str === 'string' ? str.slice(0, 120) : String(val).slice(0, 120);
             } catch (_) {
               try {
-                return String(data.payload ?? data).slice(0, 300);
+                return String(data.payload ?? data).slice(0, 120);
               } catch (__) {
                 return '';
               }
@@ -825,28 +829,28 @@
             </div>
           </div>
         `;
-        
-        // Batch'e ekle
-        pendingCards.push(cardHtml);
-        
-        // Batch timeout'u ayarla (500ms içinde gelen tüm kartları birlikte ekle)
-        if (batchTimeout) clearTimeout(batchTimeout);
-        batchTimeout = setTimeout(() => {
-          if (pendingCards.length > 0) {
-            cardsEl.insertAdjacentHTML('beforeend', pendingCards.join(''));
-            
-            // Filtreleri uygula
-            const allCards = cardsEl.querySelectorAll('.card');
-            const startIndex = allCards.length - pendingCards.length;
-            for (let i = 0; i < pendingCards.length; i++) {
-              const newCard = allCards[startIndex + i];
-              if (newCard) applyCurrentFilter(newCard);
+        // İlk render limiti dahilinde hemen ekle, aksi halde ertelenmiş kuyruğa at
+        if (createdCount < INITIAL_LIMIT) {
+          pendingCards.push(cardHtml);
+          if (batchTimeout) clearTimeout(batchTimeout);
+          batchTimeout = setTimeout(() => {
+            if (pendingCards.length > 0) {
+              cardsEl.insertAdjacentHTML('beforeend', pendingCards.join(''));
+              createdCount += pendingCards.length;
+              // Filtreleri uygula
+              const allCards = cardsEl.querySelectorAll('.card');
+              const startIndex = allCards.length - pendingCards.length;
+              for (let i = 0; i < pendingCards.length; i++) {
+                const newCard = allCards[startIndex + i];
+                if (newCard) applyCurrentFilter(newCard);
+              }
+              pendingCards = [];
+              totalSymbolsEl.textContent = Object.keys(symbolData).length;
             }
-            
-            pendingCards = [];
-            totalSymbolsEl.textContent = Object.keys(symbolData).length;
-          }
-        }, 500);
+          }, 200);
+        } else {
+          deferredCards.push(cardHtml);
+        }
       }
       
       // Verileri koruyucu şekilde birleştir (0/NaN gelirse eskiyi koru)
@@ -937,6 +941,30 @@
     checkMarketStatus();
     setInterval(checkMarketStatus, 60000);
 
+    // Arka planda ertelenen kartları kademeli ekle (idle veya periyodik)
+    function startDeferredAppender() {
+      function appendBatch() {
+        if (deferredCards.length === 0) return;
+        const chunk = deferredCards.splice(0, DEFER_BATCH);
+        cardsEl.insertAdjacentHTML('beforeend', chunk.join(''));
+        createdCount += chunk.length;
+        totalSymbolsEl.textContent = Object.keys(symbolData).length;
+        // Yeni eklenen kartlara mevcut filtreyi uygula
+        const allCards = cardsEl.querySelectorAll('.card');
+        const startIndex = allCards.length - chunk.length;
+        for (let i = 0; i < chunk.length; i++) {
+          const newCard = allCards[startIndex + i];
+          if (newCard) applyCurrentFilter(newCard);
+        }
+      }
+      const doWork = () => { appendBatch(); if (deferredCards.length) setTimeout(doWork, 400); };
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => { appendBatch(); if (deferredCards.length) doWork(); }, { timeout: 2000 });
+      } else {
+        setTimeout(doWork, 1500);
+      }
+    }
+
     // Başlat
     initializeSymbols();
     (async function start() {
@@ -946,8 +974,10 @@
       // /latest bootstrap'ı paralel başlat ve SSE ilk data gelince iptal et
       latestAbort = new AbortController();
       bootstrapLatestWithRetry(60000, latestAbort.signal);
-      // Arkaplanda paused kapat ve anlık güncelleme tetikle
-      setTimeout(() => { ensureUnpaused(); requestImmediateUpdateOnce(); }, 0);
+      // Arkaplanda paused kapat ve anlık güncelleme tetikle (ilk boyamayı etkilememesi için birkaç sn geciktir)
+      setTimeout(() => { ensureUnpaused(); requestImmediateUpdateOnce(); }, 3000);
+      // Ertelenen kart ekleyicisini başlat
+      startDeferredAppender();
     })();
   </script>
 </body>
