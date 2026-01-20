@@ -1,9 +1,10 @@
 import express from "express";
 import compression from "compression";
-import { bus, lastPayload } from "./bus.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { bus, lastPayload } from "./bus.js";
 import { getIntervalMs, setIntervalMs, getOverrides, setOverride, removeOverride, getPaused, setPaused } from "./config.js";
+import { createOrder, listOrders, getOrder, cancelOrder } from "./trading.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,10 +12,8 @@ const __dirname = path.dirname(__filename);
 export function createSseServer() {
   const app = express();
 
-  // JSON body parser (header'ları okumak için)
   app.use(express.json());
 
-  // HTTP sıkıştırma (SSE hariç)
   app.use(compression({
     filter: (req, res) => {
       const type = res.getHeader('Content-Type');
@@ -23,7 +22,6 @@ export function createSseServer() {
     }
   }));
 
-  // API Key koruması (ENV'de API_KEY varsa aktif)
   const API_KEY = process.env.API_KEY;
   const requireApiKey = (req, res, next) => {
     if (!API_KEY) return next();
@@ -33,24 +31,12 @@ export function createSseServer() {
     return res.status(401).json({ error: 'Unauthorized: Invalid or missing API Key' });
   };
 
-  // API Key kontrolü devre dışı bırakıldı - herkes erişebilir
-  // app.use((req, res, next) => {
-  //   const apiKey = req.headers['x-api-key'];
-  //   const expectedApiKey = process.env.API_KEY;
-  //   if (!apiKey || apiKey !== expectedApiKey) {
-  //     return res.status(401).json({ error: 'Unauthorized: Invalid or missing API Key' });
-  //   }
-  //   next();
-  // });
-
-  // CORS ayarları - sadece belirli origin'lere izin ver veya API key ile koru
   app.use((req, res, next) => {
     const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
     const origin = req.headers.origin;
     if (allowedOrigins.length > 0 && origin && allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else if (allowedOrigins.length === 0) {
-      // Eğer hiç origin belirtilmemişse, sadece API key ile koru
       res.setHeader('Access-Control-Allow-Origin', '*');
     } else {
       return res.status(403).json({ error: 'Forbidden: Origin not allowed' });
@@ -64,7 +50,6 @@ export function createSseServer() {
     }
   });
 
-  // Statik test istemcisi (uzun süreli cache - HTML hariç)
   app.use(express.static(path.join(__dirname, "../public"), {
     maxAge: '365d',
     immutable: true,
@@ -72,20 +57,22 @@ export function createSseServer() {
     etag: true
   }));
 
-  // Ana sayfa - client.html'i göster (public)
   app.get("/", (_, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(__dirname, "../public/client.html"));
   });
 
-  // Basit sağlık kontrolü
-  app.get("/health", (_, res) => res.json({ ok: true, ts: Date.now() }));
+  app.get("/client.html", (_, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(path.join(__dirname, "../public/client.html"));
+  });
 
-  // Favicon isteğini 404 yerine 204 ile cevapla
+  app.get("/health", (_, res) => res.json({ ok: true, ts: Date.now(), collector: 'disabled' }));
+
   app.get('/favicon.ico', (_, res) => res.status(204).end());
 
-  // Son payload'ı JSON olarak ver (API key ile korunur)
-  app.get("/latest", requireApiKey, (_, res) => res.json({ ts: Date.now(), last: lastPayload }));
+  // Collector disabled: always return null payload
+  app.get("/latest", requireApiKey, (_, res) => res.json({ ts: Date.now(), last: lastPayload || null }));
 
   app.get("/admin", requireApiKey, (_, res) => {
     res.setHeader('Cache-Control', 'no-store');
@@ -93,12 +80,29 @@ export function createSseServer() {
   });
 
   app.get("/admin/api/config", requireApiKey, async (_, res) => {
-    res.json({ intervalMs: getIntervalMs(), overrides: getOverrides(), paused: getPaused() });
+    res.json({
+      intervals: {
+        GLOBAL: getIntervalMs("GLOBAL"),
+        CRYPTO: getIntervalMs("CRYPTO"),
+        FOREX: getIntervalMs("FOREX"),
+        COMMODITY: getIntervalMs("COMMODITY"),
+        STOCK: getIntervalMs("STOCK")
+      },
+      overrides: getOverrides(),
+      paused: {
+        GLOBAL: getPaused("GLOBAL"),
+        CRYPTO: getPaused("CRYPTO"),
+        FOREX: getPaused("FOREX"),
+        COMMODITY: getPaused("COMMODITY"),
+        STOCK: getPaused("STOCK")
+      }
+    });
   });
 
   app.post("/admin/api/interval", requireApiKey, async (req, res) => {
-    const n = await setIntervalMs(req.body?.intervalMs);
-    res.json({ ok: true, intervalMs: n });
+    const market = req.body?.market || "GLOBAL";
+    const n = await setIntervalMs(req.body?.intervalMs, market);
+    res.json({ ok: true, intervalMs: n, market });
   });
 
   app.post("/admin/api/override", requireApiKey, async (req, res) => {
@@ -125,11 +129,11 @@ export function createSseServer() {
 
   app.post("/admin/api/pause", requireApiKey, async (req, res) => {
     const paused = !!(req.body && (req.body.paused === true || req.body.paused === 'true'));
-    const v = await setPaused(paused);
-    res.json({ ok: true, paused: v });
+    const market = req.body?.market || "GLOBAL";
+    const v = await setPaused(paused, market);
+    res.json({ ok: true, paused: v, market });
   });
 
-  // İsteğe bağlı olarak anlık güncelleme tetikle
   app.post("/admin/api/request-update", requireApiKey, async (_req, res) => {
     try {
       bus.emit("request_update");
@@ -137,23 +141,40 @@ export function createSseServer() {
     res.json({ ok: true });
   });
 
+  // Basit trade API (in-memory, market order simülasyonu)
+  app.get("/trade/orders", requireApiKey, (_, res) => {
+    res.json({ ok: true, orders: listOrders() });
+  });
 
-  // Türkiye saatine göre market açık mı kontrolü için fonksiyon ekle
-  function isMarketOpen() {
-    const now = new Date();
-    const trNow = new Date(now.getTime() + (3 * 60 - now.getTimezoneOffset()) * 60000);
-    const open = new Date(trNow);
-    open.setHours(9, 0, 0, 0);
-    const close = new Date(trNow);
-    close.setHours(18, 30, 0, 0);
-    return trNow >= open && trNow <= close;
-  }
+  app.get("/trade/orders/:id", requireApiKey, (req, res) => {
+    const o = getOrder(req.params.id);
+    if (!o) return res.status(404).json({ ok: false, error: "not_found" });
+    res.json({ ok: true, order: o });
+  });
 
-  let clients = [];
+  app.post("/trade/orders", requireApiKey, (req, res) => {
+    const { symbol, side, amount, market } = req.body || {};
+    if (!symbol || !side || !amount) {
+      return res.status(400).json({ ok: false, error: "bad_request" });
+    }
+    if (!["buy", "sell"].includes(String(side).toLowerCase())) {
+      return res.status(400).json({ ok: false, error: "invalid_side" });
+    }
+    const result = createOrder({ symbol: String(symbol).toLowerCase(), side: String(side).toLowerCase(), amount, market });
+    if (result.error) {
+      const status = result.error === "symbol_not_found" ? 404 : 400;
+      return res.status(status).json({ ok: false, error: result.error });
+    }
+    res.json({ ok: true, order: result });
+  });
 
-  // EventSource bağlantısı
-  app.get("/stream", requireApiKey, (req, res) => {
-    // SSE başlıklarını ayarla
+  app.delete("/trade/orders/:id", requireApiKey, (req, res) => {
+    const o = cancelOrder(req.params.id);
+    if (!o) return res.status(404).json({ ok: false, error: "not_found" });
+    res.json({ ok: true, order: o });
+  });
+
+  app.get("/stream", (req, res) => {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
@@ -165,67 +186,32 @@ export function createSseServer() {
 
     try { res.flushHeaders(); } catch (_) {}
 
-    // Yeni bağlantıyı kaydet
-    const clientId = Date.now();
-    const newClient = {
-      id: clientId,
-      res
-    };
-
-    clients.push(newClient);
-    console.log(`[SSE] New client connected: ${clientId}`);
-    // Yeni bir istemci bağlandığında collector'dan anlık güncelleme iste
-    try { bus.emit("request_update"); } catch (_) {}
-
-    // İlk bağlantıda mevcut veriyi 'update' event'i ile gönder
     if (lastPayload) {
-      try {
-        const initial = { ts: Date.now(), ...lastPayload };
-        res.write(`event: update\n`);
-        res.write(`data: ${JSON.stringify(initial)}\n\n`);
-      } catch (e) {
-        console.error(`[SSE] Initial send error for client ${clientId}:`, e.message);
-      }
-    } else {
-      // Eğer hiç veri yoksa, borsanın kapalı olduğunu belirten bir mesaj gönder
-      const marketClosedMessage = {
-        type: 'market_closed',
-        message: 'Borsa kapalı. Türkiye saatiyle 09:00-18:30 arası canlı veri yayını yapılır.'
-      };
-      res.write(`event: market_closed\ndata: ${JSON.stringify(marketClosedMessage)}\n\n`);
+      const initial = { ts: Date.now(), ...lastPayload };
+      res.write(`data: ${JSON.stringify(initial)}\n\n`);
     }
 
-    // Bağlantının açık kalmasını sağla
     const keepAlive = setInterval(() => {
       res.write(`: ping ${Date.now()}\n\n`);
     }, 15000);
 
-    // Veri geldiğinde sadece bu bağlantıya gönder
     const onData = (evt) => {
       if (res.writableEnded) return;
-      
       try {
         const payload = { ts: Date.now(), ...evt };
-        res.write(`event: update\n`);
         res.write(`data: ${JSON.stringify(payload)}\n\n`);
       } catch (e) {
-        console.error(`[SSE] Error sending to client ${clientId}:`, e.message);
+        console.error(`[SSE] Error sending to client:`, e.message);
       }
     };
 
     bus.on("data", onData);
 
-    // Bağlantı kapatıldığında temizlik yap
     req.on('close', () => {
-      console.log(`[SSE] Client ${clientId} disconnected`);
-      clients = clients.filter(client => client.id !== clientId);
       clearInterval(keepAlive);
       bus.off("data", onData);
     });
-
     req.on('aborted', () => {
-      console.log(`[SSE] Client ${clientId} aborted`);
-      clients = clients.filter(client => client.id !== clientId);
       clearInterval(keepAlive);
       bus.off("data", onData);
     });

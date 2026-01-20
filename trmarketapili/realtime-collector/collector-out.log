@@ -1,0 +1,52 @@
+[MARKET] Tüm piyasa veri toplayıcı başlatılıyor (7/24 modu)...
+[TV-API] 7/24 Modunda Başlatılıyor...
+[TV-API] Tüm piyasa verileri için güncelleme aralığı: 6000ms
+[TV-API] Tüm piyasa verileri çekiliyor... (21:28:45)
+[TV-API] Kripto Paralar verileri çekiliyor...
+[SSE] Sunucu http://localhost:4005 adresinde başlatıldı
+[SSE] Veri akışı -> http://localhost:4005/stream
+[SSE] Test istemcisi -> http://localhost:4005/client.html
+[TV-API] Kripto Paralar başarıyla yüklendi: 5000 sembol
+[TV-API] Döviz Çiftleri verileri çekiliyor...
+[TV-API] Döviz Çiftleri başarıyla yüklendi: 4169 sembol
+[TV-API] Emtialar verileri çekiliyor...
+[TV-API] Emtialar başarıyla yüklendi: 25 sembol
+[TV-API] ABD Hisse Senetleri verileri çekiliyor...
+[TV-API] ABD Hisse Senetleri başarıyla yüklendi: 5000 sembol
+[TV-API] 4 piyasadan toplam 14194 sembol işlendi.
+  - Kripto Paralar: 5000 sembol
+  - Döviz Çiftleri: 4169 sembol
+  - Emtialar: 25 sembol
+  - ABD Hisse Senetleri: 5000 sembol
+[SSE] New client connected: 1765481471859
+[TV-API] Tüm piyasa verileri çekiliyor... (21:31:11)
+[TV-API] Kripto Paralar verileri çekiliyor...
+[TV-API] Kripto Paralar başarıyla yüklendi: 5000 sembol
+[TV-API] Döviz Çiftleri verileri çekiliyor...
+[TV-API] Döviz Çiftleri başarıyla yüklendi: 4169 sembol
+[TV-API] Emtialar verileri çekiliyor...
+[TV-API] Emtialar başarıyla yüklendi: 25 sembol
+[TV-API] ABD Hisse Senetleri verileri çekiliyor...
+[TV-API] ABD Hisse Senetleri başarıyla yüklendi: 5000 sembol
+[TV-API] 4 piyasadan toplam 14194 sembol işlendi.
+  - Kripto Paralar: 5000 sembol
+  - Döviz Çiftleri: 4169 sembol
+  - Emtialar: 25 sembol
+  - ABD Hisse Senetleri: 5000 sembol
+[SSE] Client 1765481471859 aborted
+[SSE] Client 1765481471859 disconnected
+[SSE] New client connected: 1765481944417
+[TV-API] Tüm piyasa verileri çekiliyor... (21:39:04)
+[TV-API] Kripto Paralar verileri çekiliyor...
+[TV-API] Kripto Paralar başarıyla yüklendi: 5000 sembol
+[TV-API] Döviz Çiftleri verileri çekiliyor...
+[TV-API] Döviz Çiftleri başarıyla yüklendi: 4169 sembol
+[TV-API] Emtialar verileri çekiliyor...
+[TV-API] Emtialar başarıyla yüklendi: 25 sembol
+[TV-API] ABD Hisse Senetleri verileri çekiliyor...
+[TV-API] ABD Hisse Senetleri başarıyla yüklendi: 5000 sembol
+[TV-API] 4 piyasadan toplam 14194 sembol işlendi.
+  - Kripto Paralar: 5000 sembol
+  - Döviz Çiftleri: 4169 sembol
+  - Emtialar: 25 sembol
+  - ABD Hisse Senetleri: 5000 sembol

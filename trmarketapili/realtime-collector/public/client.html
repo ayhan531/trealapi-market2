@@ -1,984 +1,624 @@
 <!doctype html>
 <html lang="tr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradingView Realtime Data</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 1600px;
-      margin: 0 auto;
-    }
-
-    header {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      padding: 20px 30px;
-      border-radius: 15px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      margin-bottom: 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-
-    h1 {
-      font-size: 28px;
-      color: #1a202c;
-      font-weight: 700;
-    }
-
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .status {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 14px;
-    }
-
-    .status-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #48bb78;
-      animation: pulse 2s infinite;
-    }
-
-    .status-dot.disconnected {
-      background: #f56565;
-      animation: none;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .filter-tabs {
-      display: flex;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      padding: 15px;
-      border-radius: 15px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .filter-tab {
-      padding: 10px 20px;
-      border: none;
-      background: #edf2f7;
-      color: #4a5568;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-
-    .filter-tab:hover {
-      background: #e2e8f0;
-    }
-
-    .filter-tab.active {
-      background: #667eea;
-      color: white;
-    }
-
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
-      border-left: 4px solid #4f46e5;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .market-closed .card {
-      background: rgba(255, 230, 230, 0.9);
-      border-left: 4px solid #ef4444;
-      opacity: 0.9;
-    }
-
-    .market-closed .price {
-      color: #ef4444;
-    }
-
-    .market-closed .change.positive {
-      background: rgba(220, 38, 38, 0.1);
-      color: #dc2626;
-    }
-
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .symbol {
-      font-size: 18px;
-      font-weight: 700;
-      color: #2d3748;
-    }
-
-    .exchange {
-      font-size: 11px;
-      color: #718096;
-      background: #edf2f7;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-weight: 600;
-    }
-
-    .price {
-      font-size: 32px;
-      font-weight: 700;
-      color: #1a202c;
-      margin: 8px 0;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .change {
-      font-size: 15px;
-      font-weight: 600;
-      padding: 6px 12px;
-      border-radius: 8px;
-      display: inline-block;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .change.positive {
-      background: #c6f6d5;
-      color: #22543d;
-    }
-
-    .change.negative {
-      background: #fed7d7;
-      color: #742a2a;
-    }
-
-    .change.neutral {
-      background: #e2e8f0;
-      color: #4a5568;
-    }
-
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid #e2e8f0;
-      font-size: 12px;
-      color: #4a5568;
-    }
-
-    .live-indicator {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      color: #718096;
-    }
-
-    .live-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #f56565;
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    .log-section {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      padding: 25px;
-      border-radius: 15px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    }
-
-    .log-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    .log-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #2d3748;
-    }
-
-    .clear-btn {
-      background: #f56565;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      transition: background 0.2s;
-    }
-
-    .clear-btn:hover {
-      background: #e53e3e;
-    }
-
-    #log {
-      background: #1a202c;
-      color: #68d391;
-      padding: 20px;
-      border-radius: 10px;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      max-height: 400px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-      line-height: 1.5;
-    }
-
-    #log::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    #log::-webkit-scrollbar-track {
-      background: #2d3748;
-      border-radius: 10px;
-    }
-
-    #log::-webkit-scrollbar-thumb {
-      background: #4a5568;
-      border-radius: 10px;
-    }
-
-    .stats {
-      display: flex;
-      gap: 15px;
-      font-size: 13px;
-      color: #4a5568;
-    }
-
-    .stat-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-  </style>
-</head>
-<body>
-  <div id="market-status" class="market-status">Piyasa Durumu Yükleniyor...</div>
-  <div class="container">
-    <header>
-      <h1>📊 Borsa İstanbul Anlık Veriler</h1>
-      <div class="header-controls">
-        <div class="stats">
-          <div class="stat-item">
-            <span>📈</span>
-            <span id="totalSymbols">0</span>
-          </div>
-          <div class="stat-item">
-            <span>✅</span>
-            <span id="activeSymbols">0</span>
-          </div>
-        </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>� Stocks Market - Canlı Fiyatlar</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 30px 20px;
+      }
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        margin-bottom: 40px;
+        text-align: center;
+      }
+      h1 {
+        font-size: 36px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 10px;
+      }
+      .status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 14px;
+        color: #666;
+      }
+      .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #48bb78;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .products-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 30px;
+        padding: 0;
+      }
+      .product-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
+      .product-card:hover {
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+      }
+      .product-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+      .product-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a202c;
+      }
+      .product-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 20px;
+        background: #f0f4ff;
+        color: #667eea;
+      }
+      .product-status.closed {
+        background: #ffe0e0;
+        color: #e53e3e;
+      }
+      .status-dot-product {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: pulse 1.5s infinite;
+      }
+      .product-status.closed .status-dot-product {
+        animation: none;
+      }
+      .product-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 18px;
+        font-size: 12px;
+      }
+      .info-item {
+        display: flex;
+        flex-direction: column;
+      }
+      .info-label {
+        font-size: 10px;
+        color: #999;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .info-value {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1a202c;
+      }
+      .variants-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .variant-item {
+        display: grid;
+        grid-template-columns: 70px 1fr auto auto;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        background: #f9f9f9;
+        border-radius: 10px;
+        border-left: 3px solid #667eea;
+        font-size: 12px;
+      }
+      .variant-name {
+        font-weight: 700;
+        color: #1a202c;
+        font-size: 13px;
+      }
+      .variant-desc {
+        font-size: 11px;
+        color: #999;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .variant-price {
+        font-weight: 700;
+        color: #1a202c;
+        text-align: right;
+      }
+      .variant-change {
+        text-align: right;
+        min-width: 60px;
+        font-weight: 600;
+      }
+      .variant-change.positive {
+        color: #48bb78;
+      }
+      .variant-change.negative {
+        color: #e53e3e;
+      }
+      .variant-change.neutral {
+        color: #999;
+      }
+      .no-data {
+        text-align: center;
+        padding: 20px;
+        color: #999;
+        font-size: 13px;
+      }
+      .product-category {
+        font-size: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-weight: 600;
+      }
+      .loader {
+        text-align: center;
+        padding: 60px 20px;
+        font-size: 18px;
+        color: white;
+      }
+      .spinner {
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .last-update {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 12px;
+        margin-top: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>📈 Stocks Market</h1>
+        <p style="color: #666; margin-bottom: 15px; font-size: 16px">
+          27 Ürün - Canlı Fiyatlar
+        </p>
         <div class="status">
-          <div class="status-dot" id="statusDot"></div>
-          <span id="status">Bağlanıyor...</span>
+          <div class="status-dot"></div>
+          <span id="statusText">Bağlanılıyor...</span>
+        </div>
+      </header>
+      <div class="products-container" id="productsContainer">
+        <div class="loader">
+          <div class="spinner"></div>
+          <p>Fiyatlar yükleniyor...</p>
         </div>
       </div>
-    </header>
-
-    <div class="filter-tabs">
-      <button class="filter-tab active" onclick="filterCategory('all', this)">Tümü</button>
-      <button class="filter-tab" onclick="filterCategory('stocks_tr', this)">TR Hisse</button>
-      <button class="filter-tab" onclick="filterCategory('indices_tr', this)">İndeksler</button>
-    </div>
-
-    <div class="cards-grid" id="cards"></div>
-
-    <div class="log-section">
-      <div class="log-header">
-        <div class="log-title">📡 Raw Data Stream</div>
-        <button class="clear-btn" onclick="clearLog()">Temizle</button>
+      <div class="last-update">
+        <p>Son Güncelleme: <span id="lastUpdate">--:--:--</span></p>
       </div>
-      <div id="log">Veri bekleniyor...</div>
     </div>
-  </div>
+    <script>
+      const container = document.getElementById("productsContainer");
+      const statusText = document.getElementById("statusText");
+      const lastUpdateSpan = document.getElementById("lastUpdate");
+      let allStocks = {};
+      let connected = false;
+      const products = [
+        {
+          id: "VSE",
+          name: "Vienna",
+          country: "Avusturya",
+          currency: "EUR",
+          hours: "10:04-18:30",
+          utcOffset: 1,
+        },
+        {
+          id: "DFM",
+          name: "Dubai",
+          country: "B.A.E",
+          currency: "AED",
+          hours: "09:00-13:00",
+          utcOffset: 4,
+        },
+        {
+          id: "BHX",
+          name: "Bahrain",
+          country: "Bahreyn",
+          currency: "BHD",
+          hours: "09:30-12:30",
+          utcOffset: 3,
+        },
+        {
+          id: "ENXBE",
+          name: "Brussels",
+          country: "Belçika",
+          currency: "EUR",
+          hours: "10:00-18:30",
+          utcOffset: 1,
+        },
+        {
+          id: "PSE",
+          name: "Prague",
+          country: "Çekya",
+          currency: "CZK",
+          hours: "10:00-17:20",
+          utcOffset: 1,
+        },
+        {
+          id: "CSE",
+          name: "Copenhagen",
+          country: "Danimarka",
+          currency: "DKK",
+          hours: "10:00-18:00",
+          utcOffset: 1,
+        },
+        {
+          id: "HEX",
+          name: "Helsinki",
+          country: "Finlandiya",
+          currency: "EUR",
+          hours: "10:00-18:30",
+          utcOffset: 2,
+        },
+        {
+          id: "ENXPA",
+          name: "Paris",
+          country: "Fransa",
+          currency: "EUR",
+          hours: "10:00-18:30",
+          utcOffset: 1,
+        },
+        {
+          id: "JSE",
+          name: "Johannesburg",
+          country: "G.Afrika",
+          currency: "ZAR",
+          hours: "10:00-17:00",
+          utcOffset: 2,
+        },
+        {
+          id: "ENXAM",
+          name: "Amsterdam",
+          country: "Hollanda",
+          currency: "EUR",
+          hours: "10:00-18:30",
+          utcOffset: 1,
+        },
+        {
+          id: "LSE",
+          name: "London",
+          country: "İngiltere",
+          currency: "GBP",
+          hours: "10:00-18:30",
+          utcOffset: 0,
+        },
+        {
+          id: "ENXDU",
+          name: "Dublin",
+          country: "İrlanda",
+          currency: "EUR",
+          hours: "10:00-18:30",
+          utcOffset: 0,
+        },
+        {
+          id: "BME",
+          name: "Madrid",
+          country: "İspanya",
+          currency: "EUR",
+          hours: "10:00-18:30",
+          utcOffset: 1,
+        },
+        {
+          id: "OMXS",
+          name: "Stockholm",
+          country: "İsveç",
+          currency: "SEK",
+          hours: "10:00-18:30",
+          utcOffset: 1,
+        },
+        {
+          id: "SIX",
+          name: "Zurich",
+          country: "İsviçre",
+          currency: "CHF",
+          hours: "10:00-18:20",
+          utcOffset: 1,
+        },
+        {
+          id: "MIL",
+          name: "Milano",
+          country: "İtalya",
+          currency: "EUR",
+          hours: "10:00-18:30",
+          utcOffset: 1,
+        },
+        {
+          id: "QE",
+          name: "Qatar",
+          country: "Katar",
+          currency: "QAR",
+          hours: "09:30-13:00",
+          utcOffset: 3,
+        },
+        {
+          id: "KSE",
+          name: "Kuwait",
+          country: "Kuveyt",
+          currency: "KWD",
+          hours: "09:00-12:30",
+          utcOffset: 3,
+        },
+        {
+          id: "BES",
+          name: "Budapest",
+          country: "Macaristan",
+          currency: "HUF",
+          hours: "10:00-18:00",
+          utcOffset: 1,
+        },
+        {
+          id: "EGX",
+          name: "Kahire",
+          country: "Mısır",
+          currency: "EGP",
+          hours: "11:00-15:30",
+          utcOffset: 2,
+        },
+        {
+          id: "OBX",
+          name: "Oslo",
+          country: "Norveç",
+          currency: "NOK",
+          hours: "10:00-17:30",
+          utcOffset: 1,
+        },
+        {
+          id: "MSM",
+          name: "Muscat",
+          country: "Oman",
+          currency: "OMR",
+          hours: "09:00-13:00",
+          utcOffset: 4,
+        },
+        {
+          id: "GPW",
+          name: "Varşova",
+          country: "Polonya",
+          currency: "PLN",
+          hours: "10:00-17:50",
+          utcOffset: 1,
+        },
+        {
+          id: "ENXLI",
+          name: "Lisbon",
+          country: "Portekiz",
+          currency: "EUR",
+          hours: "10:00-18:30",
+          utcOffset: 0,
+        },
+        {
+          id: "TASI",
+          name: "Riyad",
+          country: "S.Arabistan",
+          currency: "SAT",
+          hours: "10:00-15:00",
+          utcOffset: 3,
+        },
+        {
+          id: "ATHEX",
+          name: "Atina",
+          country: "Yunanistan",
+          currency: "EUR",
+          hours: "10:30-17:00",
+          utcOffset: 2,
+        },
+        {
+          id: "XETRA",
+          name: "Berlin",
+          country: "Almanya",
+          currency: "EUR",
+          hours: "09:00-17:30",
+          utcOffset: 1,
+        },
+        {
+          id: "STO",
+          name: "Stockholm2",
+          country: "İsveç",
+          currency: "SEK",
+          hours: "09:00-17:30",
+          utcOffset: 1,
+        },
+      ];
 
-  <script>
-    // Başlangıçta boş - API'den gelecek
-    const SYMBOLS = {};
-
-    let es;
-    const statusEl = document.getElementById("status");
-    const statusDot = document.getElementById("statusDot");
-    const logEl = document.getElementById("log");
-    const cardsEl = document.getElementById("cards");
-    const totalSymbolsEl = document.getElementById("totalSymbols");
-    const activeSymbolsEl = document.getElementById("activeSymbols");
-    
-    const symbolData = {};
-    let currentFilter = 'all';
-    let pendingCards = [];
-    let batchTimeout = null;
-    const pendingUpdates = new Map();
-    let rafScheduled = false;
-    const LOG_BUFFER = [];
-    let logFlushScheduled = false;
-    const INITIAL_LIMIT = 200;      // İlk render limiti
-    const DEFER_BATCH = 200;        // Arka plan eklenecek kart sayısı
-    let createdCount = 0;
-    let deferredCards = [];
-
-    const qs = new URLSearchParams(location.search);
-    let api = qs.get('api') || (typeof window !== 'undefined' && window.SSE_BASE) || localStorage.getItem('SSE_BASE') || '';
-    let apiKey = qs.get('key') || (typeof window !== 'undefined' && window.API_KEY) || localStorage.getItem('API_KEY') || '';
-    if (qs.get('api')) { try { localStorage.setItem('SSE_BASE', api); } catch (_) {} }
-    if (qs.get('key')) { try { localStorage.setItem('API_KEY', apiKey); } catch (_) {} }
-    function getSseUrl() {
-      const base = api ? api.replace(/\/+$/, '') : '';
-      const url = base ? `${base}/stream` : '/stream';
-      if (apiKey) return `${url}?key=${encodeURIComponent(apiKey)}`;
-      return url;
-    }
-
-    function getBaseUrl() { return api ? api.replace(/\/+$/, '') : ''; }
-
-    function authFetch(input, init = {}) {
-      const headers = new Headers(init.headers || {});
-      if (apiKey) headers.set('x-api-key', apiKey);
-      return fetch(input, { ...init, headers });
-    }
-
-    function processMarketData(data) {
-      if (data && data.type === 'market_data' && Array.isArray(data.data)) {
-        for (const item of data.data) {
-          if (!item || !item.s || !Array.isArray(item.d)) continue;
-          const symbol = item.s; // e.g. BIST:XYZ
-          const arr = item.d;
-          const close = arr[1];              // close
-          const changeAbs = arr[3];          // change_abs
-          const changePctCol = arr[2];       // change (%)
-          const prevClose = arr[7];          // prev_close
-          const volumeCol = arr[8];          // volume
-          const description = arr[11] || '';
-
-          const price = Number((close ?? prevClose) ?? 0) || 0;
-          const change = Number(changeAbs ?? 0) || 0;
-          const computedPct = (price && prevClose) ? (change / Number(prevClose) * 100) : 0;
-          const changePct = Number(changePctCol ?? computedPct) || 0;
-          const volume = Number(volumeCol ?? 0) || 0;
-
-          updateSymbolData(symbol, {
-            lp: price,
-            ch: change,
-            chp: changePct,
-            volume: volume,
-            description: description,
-            type: (arr[12] || '').toString()
-          });
-        }
+      function isActive(product) {
+        const now = new Date();
+        const localHour = now.getUTCHours() + product.utcOffset;
+        const [startStr, endStr] = product.hours.split("-");
+        const times = [startStr, endStr].map((t) => t.split(":").map(Number));
+        const startMin = times[0][0] * 60 + times[0][1];
+        const endMin = times[1][0] * 60 + times[1][1];
+        const currentMin = (localHour % 24) * 60 + now.getMinutes();
+        return (
+          now.getUTCDay() >= 1 &&
+          now.getUTCDay() <= 5 &&
+          currentMin >= startMin &&
+          currentMin < endMin
+        );
       }
-    }
 
-    async function fetchLatest() {
-      try {
-        const base = getBaseUrl();
-        const primary = `${base}/latest`;
-        let resp = await authFetch(primary, { cache: 'no-store' });
-        if (!resp.ok && base) {
-          // fallback to relative if absolute failed
-          resp = await authFetch('/latest', { cache: 'no-store' });
-        }
-        const json = await resp.json();
-        if (json && json.last) {
-          processMarketData(json.last);
-          return true;
-        }
-      } catch (_) {}
-      return false;
-    }
+      function renderProducts() {
+        let html = "";
+        for (const product of products) {
+          const stocks = allStocks[product.id] || [];
+          const active = isActive(product);
+          const variantsHtml =
+            stocks.length > 0
+              ? stocks
+                  .slice(0, 8)
+                  .map((stock) => {
+                    const price = parseFloat(stock.price) || 0;
+                    const priceInTL = parseFloat(stock.priceInTL) || 0;
+                    const change = parseFloat(stock.change) || 0;
+                    const changePct = parseFloat(stock.changePct) || 0;
+                    const changeClass =
+                      change > 0
+                        ? "positive"
+                        : change < 0
+                          ? "negative"
+                          : "neutral";
+                    const sign = change > 0 ? "+" : "";
+                    return `<div class="variant-item">
+                      <div class="variant-name">${stock.symbol}</div>
+                      <div><div class="variant-desc">${
+                        stock.name || stock.symbol
+                      }</div></div>
+                      <div class="variant-price">
+                        <span>${stock.currency}${price.toFixed(2)}</span>
+                        <span style="font-size: 11px; color: #999; margin-left: 4px;">₺${priceInTL.toFixed(0)}</span>
+                      </div>
+                      <div class="variant-change ${changeClass}">${sign}${changePct.toFixed(2)}%</div>
+                    </div>`;
+                  })
+                  .join("")
+              : '<div class="no-data">Fiyat yükleniyor...</div>';
 
-    async function bootstrapLatestWithRetry(maxMs = 15000, signal) {
-      const start = Date.now();
-      while (Date.now() - start < maxMs) {
-        if (signal && signal.aborted) return;
-        const ok = await fetchLatest();
-        if (ok) return;
-        await new Promise(r => setTimeout(r, 2000));
+          html += `<div class="product-card">
+            <div class="product-header">
+              <div>
+                <div class="product-title">📦 ${product.name}</div>
+              </div>
+              <div class="product-status ${active ? "" : "closed"}">
+                <div class="status-dot-product"></div>
+                <span>${active ? "AÇIK" : "KAPALI"}</span>
+              </div>
+            </div>
+            <div class="product-info">
+              <div class="info-item">
+                <div class="info-label">Kategori</div>
+                <div class="product-category">${product.country}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Para</div>
+                <div class="info-value">${product.currency}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Saatler</div>
+                <div class="info-value" style="font-size:12px">${product.hours}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Varyant</div>
+                <div class="info-value">${stocks.length}</div>
+              </div>
+            </div>
+            <div class="variants-list">
+              ${variantsHtml}
+            </div>
+          </div>`;
+        }
+        container.innerHTML = html;
       }
-    }
 
-    async function requestImmediateUpdateOnce() {
-      try {
-        const base = getBaseUrl();
-        const url = `${base}/admin/api/request-update`;
-        let resp = await authFetch(url, { method: 'POST' });
-        if (!resp.ok && base) {
-          await authFetch('/admin/api/request-update', { method: 'POST' });
-        }
-      } catch (_) {}
-    }
-
-    async function validateAndSetBase() {
-      // verify current base works via /health, otherwise clear to relative
-      const base = getBaseUrl();
-      if (!base) return;
-      try {
-        const resp = await fetch(`${base}/health`, { cache: 'no-store' });
-        if (!resp.ok) throw new Error('health not ok');
-        try { localStorage.setItem('SSE_BASE', base); } catch (_) {}
-      } catch (_) {
-        // clear invalid base
-        api = '';
-        try { localStorage.removeItem('SSE_BASE'); } catch (_) {}
+      function updateTime() {
+        const now = new Date();
+        lastUpdateSpan.textContent =
+          String(now.getHours()).padStart(2, "0") +
+          ":" +
+          String(now.getMinutes()).padStart(2, "0") +
+          ":" +
+          String(now.getSeconds()).padStart(2, "0");
       }
-    }
 
-    async function ensureUnpaused() {
-      try {
-        const base = getBaseUrl();
-        let resp = await authFetch(`${base}/admin/api/config`, { cache: 'no-store' });
-        if (!resp.ok && base) resp = await authFetch('/admin/api/config', { cache: 'no-store' });
-        const cfg = await resp.json();
-        if (cfg && cfg.paused === true) {
-          const body = JSON.stringify({ paused: false });
-          const headers = { 'Content-Type': 'application/json' };
+      function connectSSE() {
+        const eventSource = new EventSource("/stream");
+
+        eventSource.addEventListener("open", () => {
+          connected = true;
+          statusText.textContent = "Bağlı ✓";
+        });
+
+        eventSource.addEventListener("message", (event) => {
           try {
-            let r = await authFetch(`${base}/admin/api/pause`, { method: 'POST', headers, body });
-            if (!r.ok && base) await authFetch('/admin/api/pause', { method: 'POST', headers, body });
-          } catch (_) {}
-        }
-      } catch (_) {}
-    }
-
-    // Sembolleri başlat - Artık başlangıçta boş
-    function initializeSymbols() {
-      // Başlangıçta hiçbir şey yapma, dinamik olarak eklenecek
-      totalSymbolsEl.textContent = 0;
-    }
-    
-    // Kategori belirle (dinamik semboller için)
-    function getCategoryForSymbol(symbol) {
-      const [exchange, ticker] = symbol.split(':');
-      
-      // BIST endeksleri
-      if (exchange === 'BIST' && ['XU100', 'XU050', 'XU030', 'XTEK', 'XBANK', 'XUSIN', 'XUMAL'].includes(ticker)) {
-        return 'indices_tr';
-      }
-      
-      // BIST hisse senetleri
-      if (exchange === 'BIST') return 'stocks_tr';
-      
-      return 'stocks_global'; // default - diğer tüm borsalar
-    }
-
-    // Tüm kartları ilk kez oluştur - SEMBOLLER SABİT
-    function renderAllCards() {
-      const allSymbols = Object.keys(symbolData);
-      cardsEl.innerHTML = allSymbols.map(symbol => {
-        const [exchange, ticker] = symbol.split(':');
-        const cardId = symbol.replace(/[^a-zA-Z0-9]/g, '-');
-        const category = symbolData[symbol].category;
-        
-        return `
-          <div class="card loading" id="card-${cardId}" data-category="${category}">
-            <div class="card-header">
-              <div class="symbol">${ticker}</div>
-              <div class="exchange">${exchange}</div>
-            </div>
-            <div class="price">---</div>
-            <div class="change neutral">● 0.00 (0.00%)</div>
-            <div class="info-row">
-              <span>Volume: ---</span>
-              <span class="live-indicator">
-                <div class="live-dot"></div>
-                Bekleniyor
-              </span>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Sadece veri güncellenecek - SEMBOLLER DEĞİŞMEYECEK
-    function updateCard(symbol) {
-      const cardId = symbol.replace(/[^a-zA-Z0-9]/g, '-');
-      const cardEl = document.getElementById(`card-${cardId}`);
-      if (!cardEl) return;
-      
-      const data = symbolData[symbol];
-      const [exchange, ticker] = symbol.split(':');
-      const price = data.lp || 0;
-      const change = data.ch || 0;
-      const changePercent = data.chp || 0;
-      const volume = data.volume || 0;
-      const isPositive = change > 0;
-      const isNegative = change < 0;
-      const changeClass = isPositive ? 'positive' : isNegative ? 'negative' : 'neutral';
-      
-      cardEl.className = `card ${data._hasData ? '' : 'loading'}`;
-      cardEl.setAttribute('data-category', data.category);
-      
-      const timeStr = data._lastUpdate ? new Date(data._lastUpdate).toLocaleTimeString('tr-TR') : 'Bekleniyor';
-      
-      cardEl.innerHTML = `
-        <div class="card-header">
-          <div class="symbol">${ticker}</div>
-          <div class="exchange">${exchange}</div>
-        </div>
-        <div class="price">${price > 0 ? price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 6}) : '---'}</div>
-        <div class="change ${changeClass}">
-          ${isPositive ? '▲' : isNegative ? '▼' : '●'} ${Math.abs(change).toFixed(2)} (${changePercent.toFixed(2)}%)
-        </div>
-        <div class="info-row">
-          <span>Volume: ${volume > 0 ? volume.toLocaleString() : '---'}</span>
-          <span class="live-indicator">
-            <div class="live-dot"></div>
-            ${timeStr}
-          </span>
-        </div>
-      `;
-    }
-
-    function scheduleUpdate(symbol) {
-      pendingUpdates.set(symbol, true);
-      if (rafScheduled) return;
-      rafScheduled = true;
-      requestAnimationFrame(() => {
-        rafScheduled = false;
-        // Chunk updates to avoid long tasks
-        const symbols = Array.from(pendingUpdates.keys());
-        pendingUpdates.clear();
-        const chunkSize = 100;
-        let i = 0;
-        function applyChunk() {
-          const end = Math.min(i + chunkSize, symbols.length);
-          for (; i < end; i++) updateCard(symbols[i]);
-          if (i < symbols.length) requestAnimationFrame(applyChunk);
-        }
-        applyChunk();
-      });
-    }
-
-    let firstSseDelivered = false;
-    let latestAbort = null;
-    function connect() {
-      if (es) es.close();
-      es = new EventSource(getSseUrl());
-      
-      es.onopen = () => {
-        statusEl.textContent = "Bağlı ✅";
-        statusDot.classList.remove("disconnected");
-      };
-      
-      es.onerror = () => {
-        statusEl.textContent = "Bağlantı Hatası ❌";
-        statusDot.classList.add("disconnected");
-        try { es.close(); } catch (_) {}
-        setTimeout(connect, 3000);
-      };
-      
-      es.addEventListener("update", (e) => {
-        try {
-          if (!firstSseDelivered && latestAbort) { try { latestAbort.abort(); } catch(_) {} }
-          firstSseDelivered = true;
-          const data = JSON.parse(e.data);
-          
-          // Log'a ekle
-          const time = new Date(data.ts).toLocaleTimeString('tr-TR');
-          const payloadPreview = (() => {
-            try {
-              const val = (data && 'payload' in data) ? data.payload : data;
-              const str = JSON.stringify(val);
-              return typeof str === 'string' ? str.slice(0, 120) : String(val).slice(0, 120);
-            } catch (_) {
-              try {
-                return String(data.payload ?? data).slice(0, 120);
-              } catch (__) {
-                return '';
-              }
+            const data = JSON.parse(event.data);
+            updateTime();
+            if (data.type === "intl_exchanges" && data.data) {
+              allStocks = data.data;
+              renderProducts();
             }
-          })();
-          // Throttled log buffer (max 50 lines)
-          LOG_BUFFER.unshift(`[${time}] ${payloadPreview}`);
-          if (LOG_BUFFER.length > 50) LOG_BUFFER.length = 50;
-          if (!logFlushScheduled) {
-            logFlushScheduled = true;
-            setTimeout(() => {
-              logFlushScheduled = false;
-              logEl.textContent = LOG_BUFFER.join('\n');
-            }, 250);
+          } catch (error) {
+            console.error("Parse error:", error);
           }
-          
-          // TradingView Screener market_data (batch)
-          if (data.type === 'market_data' && Array.isArray(data.data)) {
-            for (const item of data.data) {
-              if (!item || !item.s || !Array.isArray(item.d)) continue;
-              const symbol = item.s; // e.g. BIST:XYZ
-              const arr = item.d;
-              const close = arr[1];              // close
-              const changeAbs = arr[3];          // change_abs
-              const changePctCol = arr[2];       // change (%)
-              const prevClose = arr[7];          // prev_close
-              const volumeCol = arr[8];          // volume
-              const description = arr[11] || '';
+        });
 
-              // Fallback'lar: kapanış yoksa prev_close kullan; yüzde yoksa change_abs/prev_close hesapla
-              const price = Number((close ?? prevClose) ?? 0) || 0;
-              const change = Number(changeAbs ?? 0) || 0;
-              const computedPct = (price && prevClose) ? (change / Number(prevClose) * 100) : 0;
-              const changePct = Number(changePctCol ?? computedPct) || 0;
-              const volume = Number(volumeCol ?? 0) || 0;
-
-              updateSymbolData(symbol, {
-                lp: price,
-                ch: change,
-                chp: changePct,
-                volume: volume,
-                description: description,
-                type: (arr[12] || '').toString()
-              });
-            }
-          }
-
-          // Quote data parse et (TradingView WebSocket)
-          if (data.payload && data.payload.name === "qsd") {
-            const quote = data.payload.params[1];
-            if (quote && quote.n && quote.v) {
-              updateSymbolData(quote.n, quote.v);
-            }
-          }
-          
-          // Puppeteer data
-          if (data.type === "puppeteer" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, data.payload.data);
-          }
-          
-          // TradingView API data
-          if (data.type === "tradingview-api" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, {
-              lp: data.payload.price,
-              ch: data.payload.changeAbs,
-              chp: data.payload.change,
-              volume: data.payload.volume,
-              description: data.payload.description,
-              type: data.payload.type
-            });
-          }
-
-          // TradingView Index data
-          if (data.type === "tradingview-index" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, {
-              lp: data.payload.price,
-              ch: data.payload.changeAbs,
-              chp: data.payload.change,
-              volume: data.payload.volume,
-              description: data.payload.description,
-              type: data.payload.type
-            });
-          }
-
-          // CryptoCompare data
-          if (data.type === "cryptocompare" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, {
-              lp: data.payload.price,
-              ch: (data.payload.price * data.payload.change / 100),
-              chp: data.payload.change,
-              volume: data.payload.volume || 0
-            });
-          }
-
-          // Alpha Vantage data
-          if (data.type === "alphavantage" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, {
-              lp: data.payload.price,
-              ch: 0,
-              chp: 0,
-              volume: 0
-            });
-          }
-
-          // FMP data
-          if (data.type === "fmp" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, {
-              lp: data.payload.price,
-              ch: (data.payload.price * data.payload.change / 100),
-              chp: data.payload.change,
-              volume: data.payload.volume || 0
-            });
-          }
-
-          // CoinGecko data
-          if (data.type === "coingecko" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, {
-              lp: data.payload.price,
-              ch: (data.payload.price * data.payload.change / 100),
-              chp: data.payload.change,
-              volume: 0
-            });
-          }
-
-          // Twelve Data data
-          if (data.type === "twelvedata" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, {
-              lp: data.payload.price,
-              ch: 0,
-              chp: 0,
-              volume: 0
-            });
-          }
-
-          // Fixer.io data
-          if (data.type === "fixer" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, {
-              lp: data.payload.price,
-              ch: 0,
-              chp: 0,
-              volume: 0
-            });
-          }
-
-          // Yahoo Finance Fixed data
-          if (data.type === "yahoo-fixed" && data.payload && data.payload.symbol) {
-            updateSymbolData(data.payload.symbol, {
-              lp: data.payload.price,
-              ch: (data.payload.price * data.payload.change / 100),
-              chp: data.payload.change,
-              volume: data.payload.volume || 0
-            });
-          }
-        } catch (err) {
-          console.error("Parse error:", err);
-        }
-      });
-    }
-
-    function updateSymbolData(symbol, values) {
-      // Eğer sembol yoksa, dinamik olarak ekle
-      if (!symbolData[symbol]) {
-        const category = getCategoryForSymbol(symbol);
-        symbolData[symbol] = {
-          category: category,
-          lp: 0,
-          ch: 0,
-          chp: 0,
-          volume: 0,
-          _lastUpdate: null,
-          _hasData: false
-        };
-        
-        // Yeni kart oluştur
-        const [exchange, ticker] = symbol.split(':');
-        const cardId = symbol.replace(/[^a-zA-Z0-9]/g, '-');
-        const cardHtml = `
-          <div class="card loading" id="card-${cardId}" data-category="${category}">
-            <div class="card-header">
-              <div class="symbol">${ticker}</div>
-              <div class="exchange">${exchange}</div>
-            </div>
-            <div class="price">---</div>
-            <div class="change neutral">● 0.00 (0.00%)</div>
-            <div class="info-row">
-              <span>Volume: ---</span>
-              <span class="live-indicator">
-                <div class="live-dot"></div>
-                Bekleniyor
-              </span>
-            </div>
-          </div>
-        `;
-        // İlk render limiti dahilinde hemen ekle, aksi halde ertelenmiş kuyruğa at
-        if (createdCount < INITIAL_LIMIT) {
-          pendingCards.push(cardHtml);
-          if (batchTimeout) clearTimeout(batchTimeout);
-          batchTimeout = setTimeout(() => {
-            if (pendingCards.length > 0) {
-              cardsEl.insertAdjacentHTML('beforeend', pendingCards.join(''));
-              createdCount += pendingCards.length;
-              // Filtreleri uygula
-              const allCards = cardsEl.querySelectorAll('.card');
-              const startIndex = allCards.length - pendingCards.length;
-              for (let i = 0; i < pendingCards.length; i++) {
-                const newCard = allCards[startIndex + i];
-                if (newCard) applyCurrentFilter(newCard);
-              }
-              pendingCards = [];
-              totalSymbolsEl.textContent = Object.keys(symbolData).length;
-            }
-          }, 200);
-        } else {
-          deferredCards.push(cardHtml);
-        }
+        eventSource.addEventListener("error", () => {
+          connected = false;
+          statusText.textContent = "Bağlantı Kesildi ⚠️";
+          eventSource.close();
+          setTimeout(connectSSE, 3000);
+        });
       }
-      
-      // Verileri koruyucu şekilde birleştir (0/NaN gelirse eskiyi koru)
-      const current = symbolData[symbol];
-      let updated = false;
-      if (Number.isFinite(values.lp) && values.lp > 0) { current.lp = values.lp; updated = true; }
-      if (Number.isFinite(values.ch)) { current.ch = values.ch; updated = true; }
-      if (Number.isFinite(values.chp)) { current.chp = values.chp; updated = true; }
-      if (Number.isFinite(values.volume) && values.volume >= 0) { current.volume = values.volume; updated = true; }
-      if (typeof values.description === 'string') { current.description = values.description; }
-      if (typeof values.type === 'string') { current.type = values.type; }
-      if (updated) {
-        current._lastUpdate = Date.now();
-        current._hasData = true;
-      }
-      
-      // Aktif sembol sayısını güncelle
-      const activeCount = Object.values(symbolData).filter(s => s._hasData).length;
-      activeSymbolsEl.textContent = activeCount;
-      
-      // Sadece ilgili kartı güncelle (batched)
-      scheduleUpdate(symbol);
-    }
 
-    function filterCategory(category, btn) {
-      currentFilter = category;
-      
-      // Tab aktifliğini güncelle
-      document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.classList.remove('active');
-      });
-      if (btn) btn.classList.add('active');
-      
-      // Kartları filtrele
-      document.querySelectorAll('.card').forEach(card => {
-        const cardCategory = card.getAttribute('data-category');
-        if (category === 'all' || cardCategory === category) {
-          card.style.display = 'block';
-        } else {
-          card.style.display = 'none';
-        }
-      });
-    }
-    
-    // Yeni eklenen kartlar için filtreyi uygula
-    function applyCurrentFilter(cardElement) {
-      if (currentFilter === 'all') {
-        cardElement.style.display = 'block';
-      } else {
-        const cardCategory = cardElement.getAttribute('data-category');
-        cardElement.style.display = (cardCategory === currentFilter) ? 'block' : 'none';
-      }
-    }
-
-    function clearLog() {
-      logEl.textContent = 'Log temizlendi...';
-    }
-
-    // Piyasa durumunu kontrol et ve güncelle
-    function checkMarketStatus() {
-      const now = new Date();
-      const day = now.getDay();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      
-      // Hafta sonu kontrolü (0: Pazar, 6: Cumartesi)
-      const isWeekend = day === 0 || day === 6;
-      
-      // Piyasa saatleri: Hafta içi 09:00-18:30
-      const isMarketOpen = !isWeekend && 
-                          (hours > 9 || (hours === 9 && minutes >= 0)) && 
-                          (hours < 18 || (hours === 18 && minutes <= 30));
-      
-      const marketStatusElement = document.getElementById('market-status');
-      
-      if (isMarketOpen) {
-        document.body.classList.remove('market-closed');
-        marketStatusElement.textContent = 'Piyasa Açık';
-        marketStatusElement.style.background = '#10b981';
-      } else {
-        document.body.classList.add('market-closed');
-        marketStatusElement.textContent = 'Piyasa Kapalı';
-        marketStatusElement.style.background = '#ef4444';
-      }
-    }
-
-    // Her dakikada bir piyasa durumunu kontrol et
-    checkMarketStatus();
-    setInterval(checkMarketStatus, 60000);
-
-    // Arka planda ertelenen kartları kademeli ekle (idle veya periyodik)
-    function startDeferredAppender() {
-      function appendBatch() {
-        if (deferredCards.length === 0) return;
-        const chunk = deferredCards.splice(0, DEFER_BATCH);
-        cardsEl.insertAdjacentHTML('beforeend', chunk.join(''));
-        createdCount += chunk.length;
-        totalSymbolsEl.textContent = Object.keys(symbolData).length;
-        // Yeni eklenen kartlara mevcut filtreyi uygula
-        const allCards = cardsEl.querySelectorAll('.card');
-        const startIndex = allCards.length - chunk.length;
-        for (let i = 0; i < chunk.length; i++) {
-          const newCard = allCards[startIndex + i];
-          if (newCard) applyCurrentFilter(newCard);
-        }
-      }
-      const doWork = () => { appendBatch(); if (deferredCards.length) setTimeout(doWork, 400); };
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => { appendBatch(); if (deferredCards.length) doWork(); }, { timeout: 2000 });
-      } else {
-        setTimeout(doWork, 1500);
-      }
-    }
-
-    // Başlat
-    initializeSymbols();
-    (async function start() {
-      await validateAndSetBase();
-      // SSE'yi hemen aç (kritik yolu kısalt)
-      connect();
-      // /latest bootstrap'ı paralel başlat ve SSE ilk data gelince iptal et
-      latestAbort = new AbortController();
-      bootstrapLatestWithRetry(60000, latestAbort.signal);
-      // Arkaplanda paused kapat ve anlık güncelleme tetikle (ilk boyamayı etkilememesi için birkaç sn geciktir)
-      setTimeout(() => { ensureUnpaused(); requestImmediateUpdateOnce(); }, 3000);
-      // Ertelenen kart ekleyicisini başlat
-      startDeferredAppender();
-    })();
-  </script>
-</body>
+      renderProducts();
+      updateTime();
+      connectSSE();
+      setInterval(updateTime, 1000);
+      setInterval(renderProducts, 10000);
+    </script>
+  </body>
 </html>

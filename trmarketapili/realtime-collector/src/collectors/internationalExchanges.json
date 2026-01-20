@@ -1,0 +1,312 @@
+{
+  "exchanges": [
+    {
+      "id": "VSE",
+      "name": "Vienna Stock Exchange",
+      "country": "Avusturya",
+      "countryCode": "AT",
+      "currency": "EUR",
+      "tradingHours": "10:04-18:30",
+      "utcOffset": 1,
+      "tvExchange": "VIE",
+      "timezone": "Europe/Vienna"
+    },
+    {
+      "id": "DFM",
+      "name": "Dubai Financial Market",
+      "country": "B.A.E",
+      "countryCode": "AE",
+      "currency": "AED",
+      "tradingHours": "09:00-13:00",
+      "utcOffset": 4,
+      "tvExchange": "DFM",
+      "timezone": "Asia/Dubai"
+    },
+    {
+      "id": "BHX",
+      "name": "Bahrain Bourse",
+      "country": "Bahreyn",
+      "countryCode": "BH",
+      "currency": "BHD",
+      "tradingHours": "09:30-12:30",
+      "utcOffset": 3,
+      "tvExchange": "BAHRAIN",
+      "timezone": "Asia/Bahrain"
+    },
+    {
+      "id": "ENXBE",
+      "name": "Euronext Brussels",
+      "country": "Belçika",
+      "countryCode": "BE",
+      "currency": "EUR",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 1,
+      "tvExchange": "EURONEXT",
+      "timezone": "Europe/Brussels"
+    },
+    {
+      "id": "PSE",
+      "name": "Prague Stock Exchange",
+      "country": "Çekya",
+      "countryCode": "CZ",
+      "currency": "CZK",
+      "tradingHours": "10:00-17:20",
+      "utcOffset": 1,
+      "tvExchange": "PSE",
+      "timezone": "Europe/Prague"
+    },
+    {
+      "id": "CSE",
+      "name": "Copenhagen Stock Exchange",
+      "country": "Danimarka",
+      "countryCode": "DK",
+      "currency": "DKK",
+      "tradingHours": "10:00-18:00",
+      "utcOffset": 1,
+      "tvExchange": "CSE",
+      "timezone": "Europe/Copenhagen"
+    },
+    {
+      "id": "HEX",
+      "name": "Helsinki Stock Exchange",
+      "country": "Finlandiya",
+      "countryCode": "FI",
+      "currency": "EUR",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 2,
+      "tvExchange": "TASE",
+      "timezone": "Europe/Helsinki"
+    },
+    {
+      "id": "ENXPA",
+      "name": "Euronext Paris",
+      "country": "Fransa",
+      "countryCode": "FR",
+      "currency": "EUR",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 1,
+      "tvExchange": "EURONEXT",
+      "timezone": "Europe/Paris"
+    },
+    {
+      "id": "JSE",
+      "name": "Johannesburg Stock Exchange",
+      "country": "G.Afrika",
+      "countryCode": "ZA",
+      "currency": "ZAR",
+      "tradingHours": "10:00-17:00",
+      "utcOffset": 2,
+      "tvExchange": "JSE",
+      "timezone": "Africa/Johannesburg"
+    },
+    {
+      "id": "ENXAM",
+      "name": "Euronext Amsterdam",
+      "country": "Hollanda",
+      "countryCode": "NL",
+      "currency": "EUR",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 1,
+      "tvExchange": "EURONEXT",
+      "timezone": "Europe/Amsterdam"
+    },
+    {
+      "id": "LSE",
+      "name": "London Stock Exchange",
+      "country": "İngiltere",
+      "countryCode": "GB",
+      "currency": "GBP",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 0,
+      "tvExchange": "LSE",
+      "timezone": "Europe/London"
+    },
+    {
+      "id": "ENXDU",
+      "name": "Euronext Dublin",
+      "country": "İrlanda",
+      "countryCode": "IE",
+      "currency": "EUR",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 0,
+      "tvExchange": "EURONEXT",
+      "timezone": "Europe/Dublin"
+    },
+    {
+      "id": "BME",
+      "name": "Madrid Stock Exchange",
+      "country": "İspanya",
+      "countryCode": "ES",
+      "currency": "EUR",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 1,
+      "tvExchange": "BME",
+      "timezone": "Europe/Madrid"
+    },
+    {
+      "id": "OMXS",
+      "name": "NASDAQ OMX Stockholm",
+      "country": "İsveç",
+      "countryCode": "SE",
+      "currency": "SEK",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 1,
+      "tvExchange": "OMXSTO",
+      "timezone": "Europe/Stockholm"
+    },
+    {
+      "id": "SIX",
+      "name": "Swiss Market Index",
+      "country": "İsviçre",
+      "countryCode": "CH",
+      "currency": "CHF",
+      "tradingHours": "10:00-18:20",
+      "utcOffset": 1,
+      "tvExchange": "SIX",
+      "timezone": "Europe/Zurich"
+    },
+    {
+      "id": "MIL",
+      "name": "Borsa Italiana",
+      "country": "İtalya",
+      "countryCode": "IT",
+      "currency": "EUR",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 1,
+      "tvExchange": "MIL",
+      "timezone": "Europe/Rome"
+    },
+    {
+      "id": "QE",
+      "name": "Qatar Exchange",
+      "country": "Katar",
+      "countryCode": "QA",
+      "currency": "QAR",
+      "tradingHours": "09:30-13:00",
+      "utcOffset": 3,
+      "tvExchange": "TADAWUL",
+      "timezone": "Asia/Qatar"
+    },
+    {
+      "id": "KSE",
+      "name": "Boursa Kuwait",
+      "country": "Kuveyt",
+      "countryCode": "KW",
+      "currency": "KWD",
+      "tradingHours": "09:00-12:30",
+      "utcOffset": 3,
+      "tvExchange": "KSE",
+      "timezone": "Asia/Kuwait"
+    },
+    {
+      "id": "BES",
+      "name": "Budapest Stock Exchange",
+      "country": "Macaristan",
+      "countryCode": "HU",
+      "currency": "HUF",
+      "tradingHours": "10:00-18:00",
+      "utcOffset": 1,
+      "tvExchange": "BSE",
+      "timezone": "Europe/Budapest"
+    },
+    {
+      "id": "EGX",
+      "name": "Egyptian Exchange",
+      "country": "Mısır",
+      "countryCode": "EG",
+      "currency": "EGP",
+      "tradingHours": "11:00-15:30",
+      "utcOffset": 2,
+      "tvExchange": "EGX",
+      "timezone": "Africa/Cairo"
+    },
+    {
+      "id": "OBX",
+      "name": "OBX Stock Exchange",
+      "country": "Norveç",
+      "countryCode": "NO",
+      "currency": "NOK",
+      "tradingHours": "10:00-17:30",
+      "utcOffset": 1,
+      "tvExchange": "OSL",
+      "timezone": "Europe/Oslo"
+    },
+    {
+      "id": "MSM",
+      "name": "Muscat Securities Market",
+      "country": "Oman",
+      "countryCode": "OM",
+      "currency": "OMR",
+      "tradingHours": "09:00-13:00",
+      "utcOffset": 4,
+      "tvExchange": "MUS",
+      "timezone": "Asia/Muscat"
+    },
+    {
+      "id": "GPW",
+      "name": "Warsaw Stock Exchange",
+      "country": "Polonya",
+      "countryCode": "PL",
+      "currency": "PLN",
+      "tradingHours": "10:00-17:50",
+      "utcOffset": 1,
+      "tvExchange": "GPW",
+      "timezone": "Europe/Warsaw"
+    },
+    {
+      "id": "ENXLI",
+      "name": "Euronext Lisbon",
+      "country": "Portekiz",
+      "countryCode": "PT",
+      "currency": "EUR",
+      "tradingHours": "10:00-18:30",
+      "utcOffset": 0,
+      "tvExchange": "EURONEXT",
+      "timezone": "Europe/Lisbon"
+    },
+    {
+      "id": "TASI",
+      "name": "Saudi Arabian Stock Exchange",
+      "country": "S.Arabistan",
+      "countryCode": "SA",
+      "currency": "SAT",
+      "tradingHours": "10:00-15:00",
+      "utcOffset": 3,
+      "tvExchange": "TADAWUL",
+      "timezone": "Asia/Riyadh"
+    },
+    {
+      "id": "ATHEX",
+      "name": "Athens Stock Exchange",
+      "country": "Yunanistan",
+      "countryCode": "GR",
+      "currency": "EUR",
+      "tradingHours": "10:30-17:00",
+      "utcOffset": 2,
+      "tvExchange": "ATHEX",
+      "timezone": "Europe/Athens"
+    },
+    {
+      "id": "XETRA",
+      "name": "Deutsche Börse XETRA",
+      "country": "Almanya",
+      "countryCode": "DE",
+      "currency": "EUR",
+      "tradingHours": "09:00-17:30",
+      "utcOffset": 1,
+      "tvExchange": "XETR",
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "id": "STO",
+      "name": "Nasdaq Stockholm",
+      "country": "İsveç",
+      "countryCode": "SE",
+      "currency": "SEK",
+      "tradingHours": "09:00-17:30",
+      "utcOffset": 1,
+      "tvExchange": "NASDAQ",
+      "timezone": "Europe/Stockholm"
+    }
+  ]
+}

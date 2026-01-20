@@ -28,20 +28,47 @@ if (redis) {
   redis.connect().catch(() => {});
 }
 
-const DEFAULT_INTERVAL = Number(process.env.TVAPI_INTERVAL || 1000);
+const DEFAULT_INTERVAL = Number(process.env.COINGECKO_INTERVAL_MS || process.env.TVAPI_INTERVAL || 10000);
+const DEFAULTS = {
+  GLOBAL: DEFAULT_INTERVAL,
+  CRYPTO: Number(process.env.CRYPTO_INTERVAL_MS) || DEFAULT_INTERVAL,
+  FOREX: Number(process.env.FOREX_INTERVAL_MS) || DEFAULT_INTERVAL,
+  COMMODITY: Number(process.env.COMMODITY_INTERVAL_MS) || DEFAULT_INTERVAL,
+  STOCK: Number(process.env.BIST_INTERVAL_MS) || 15000
+};
 
 let state = {
-  intervalMs: DEFAULT_INTERVAL,
+  intervals: {
+    GLOBAL: DEFAULTS.GLOBAL,
+    CRYPTO: DEFAULTS.CRYPTO,
+    FOREX: DEFAULTS.FOREX,
+    COMMODITY: DEFAULTS.COMMODITY,
+    STOCK: DEFAULTS.STOCK
+  },
   overrides: {},
-  paused: false
+  paused: {
+    GLOBAL: false,
+    CRYPTO: false,
+    FOREX: false,
+    COMMODITY: false,
+    STOCK: false
+  }
 };
 
 try {
   const s = fs.readFileSync(persistFile, "utf-8");
   const json = JSON.parse(s);
-  if (typeof json.intervalMs === 'number') state.intervalMs = json.intervalMs;
+  if (json.intervals && typeof json.intervals === 'object') {
+    state.intervals = { ...state.intervals, ...json.intervals };
+  } else if (typeof json.intervalMs === 'number') {
+    state.intervals.GLOBAL = json.intervalMs;
+  }
   if (json.overrides && typeof json.overrides === 'object') state.overrides = json.overrides;
-  if (typeof json.paused === 'boolean') state.paused = json.paused;
+  if (json.paused && typeof json.paused === 'object') {
+    state.paused = { ...state.paused, ...json.paused };
+  } else if (typeof json.paused === 'boolean') {
+    state.paused.GLOBAL = json.paused;
+  }
 } catch {}
 
 async function loadFromRedis() {
@@ -50,9 +77,13 @@ async function loadFromRedis() {
     const s = await redis.get("admin:config");
     if (s) {
       const json = JSON.parse(s);
-      if (typeof json.intervalMs === 'number') state.intervalMs = json.intervalMs;
+      if (json.intervals && typeof json.intervals === 'object') {
+        state.intervals = { ...state.intervals, ...json.intervals };
+      }
       if (json.overrides && typeof json.overrides === 'object') state.overrides = json.overrides;
-      if (typeof json.paused === 'boolean') state.paused = json.paused;
+      if (json.paused && typeof json.paused === 'object') {
+        state.paused = { ...state.paused, ...json.paused };
+      }
     }
   } catch {}
 }
@@ -84,13 +115,15 @@ function purgeExpired() {
   if (changed) persist();
 }
 
-export function getIntervalMs() {
-  return state.intervalMs;
+export function getIntervalMs(market = "GLOBAL") {
+  const key = String(market || "GLOBAL").toUpperCase();
+  return state.intervals[key] ?? state.intervals.GLOBAL ?? DEFAULT_INTERVAL;
 }
 
-export async function setIntervalMs(ms) {
-  const v = Math.max(200, Number(ms)||DEFAULT_INTERVAL);
-  state.intervalMs = v;
+export async function setIntervalMs(ms, market = "GLOBAL") {
+  const key = String(market || "GLOBAL").toUpperCase();
+  const v = Math.max(200, Number(ms)||DEFAULTS[key]||DEFAULT_INTERVAL);
+  state.intervals[key] = v;
   await persist();
   return v;
 }
@@ -113,12 +146,14 @@ export async function removeOverride(symbol) {
   return true;
 }
 
-export function getPaused() {
-  return !!state.paused;
+export function getPaused(market = "GLOBAL") {
+  const key = String(market || "GLOBAL").toUpperCase();
+  return !!state.paused[key];
 }
 
-export async function setPaused(paused) {
-  state.paused = !!paused;
+export async function setPaused(paused, market = "GLOBAL") {
+  const key = String(market || "GLOBAL").toUpperCase();
+  state.paused[key] = !!paused;
   await persist();
-  return state.paused;
+  return state.paused[key];
 }
