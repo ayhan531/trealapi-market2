@@ -307,6 +307,28 @@
       "utcOffset": 1,
       "tvExchange": "NASDAQ",
       "timezone": "Europe/Stockholm"
+    },
+    {
+      "id": "NYSE",
+      "name": "New York Stock Exchange",
+      "country": "Amerika",
+      "countryCode": "US",
+      "currency": "USD",
+      "tradingHours": "09:30-16:00",
+      "utcOffset": -5,
+      "tvExchange": "NYSE",
+      "timezone": "America/New_York"
+    },
+    {
+      "id": "NASDAQ",
+      "name": "NASDAQ",
+      "country": "Amerika",
+      "countryCode": "US",
+      "currency": "USD",
+      "tradingHours": "09:30-16:00",
+      "utcOffset": -5,
+      "tvExchange": "NASDAQ",
+      "timezone": "America/New_York"
     }
   ]
 }

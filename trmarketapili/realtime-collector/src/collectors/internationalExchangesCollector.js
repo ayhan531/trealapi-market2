@@ -10,6 +10,10 @@ const __dirname = path.dirname(__filename);
 const exchangeDataPath = path.join(__dirname, "internationalExchanges.json");
 const exchangeData = JSON.parse(fs.readFileSync(exchangeDataPath, "utf-8"));
 
+// Load country companies whitelist (only show top companies from each country)
+const countryCompaniesPath = path.join(__dirname, "countryCompanies.json");
+const countryCompanies = JSON.parse(fs.readFileSync(countryCompaniesPath, "utf-8"));
+
 const TV_ENDPOINT = "https://scanner.tradingview.com/global/scan";
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -109,36 +113,70 @@ async function fetchExchangeData(exchange) {
   });
 
   if (!resp.ok) throw new Error(`TV HTTP ${resp.status}`);
-  const json = await resp.json();
-  const rows = Array.isArray(json?.data) ? json.data.slice(0, 50) : [];
+    const json = await resp.json();
+    const rows = Array.isArray(json?.data) ? json.data.slice(0, 100) : [];
 
-  return rows.map((item) => {
-    const symbol = item.s || "";
-    const d = Array.isArray(item.d) ? item.d : [];
-    const cols = payload.columns;
-    const map = {};
-    d.forEach((v, i) => {
-      map[cols[i]] = v;
-    });
-    return {
-      symbol,
-      name: map.description || map.name || symbol,
-      price: map.close,
-      priceInTL: map.close ? Math.round(map.close * exchangeRate * 100) / 100 : null,
-      change: map.change_abs ?? map.change,
-      changePct: map.change,
-      volume: map.volume,
-      marketCap: map.market_cap_basic,
-      exchange: exchange.id,
-      currency: exchange.currency,
-      currencyDisplay: exchange.currency === "USD" ? "USD→TL" : exchange.currency,
-      country: exchange.country,
-      assetType: "STOCK",
-      category: exchange.id,
-      raw: map,
-    };
-  });
-}
+    // Filter symbols: only keep those belonging to the target country.
+    // Use countryCompanies whitelist to filter symbols by country.
+    let acceptedCount = 0;
+    let skippedCount = 0;
+    let whitelistSkipped = 0;
+
+    const filtered = rows.map((item) => {
+      const symbol = item.s || "";
+      const d = Array.isArray(item.d) ? item.d : [];
+      const cols = payload.columns;
+      const map = {};
+      d.forEach((v, i) => {
+        map[cols[i]] = v;
+      });
+
+      // Step 1: Check if symbol is in the country's whitelist
+      const countryCode = exchange.countryCode; // e.g., "AT" for Austria
+      const countryData = countryCompanies[countryCode];
+      if (!countryData) {
+        // No whitelist for this country code; skip this symbol
+        skippedCount++;
+        return null;
+      }
+
+      const symbolClean = symbol.split(":")[symbol.includes(":") ? 1 : 0].toUpperCase();
+      const isInWhitelist = (countryData.companies || []).some((comp) =>
+        comp.toUpperCase().includes(symbolClean) || symbolClean.includes(comp.toUpperCase())
+      );
+
+      if (!isInWhitelist) {
+        // Symbol not in country whitelist; skip it
+        whitelistSkipped++;
+        return null;
+      }
+
+      acceptedCount++;
+
+      return {
+        symbol,
+        name: map.description || map.name || symbol,
+        price: map.close ? Math.round(map.close * exchangeRate * 100) / 100 : null,
+        change: map.change_abs ?? map.change,
+        changePct: map.change,
+        volume: map.volume,
+        marketCap: map.market_cap_basic,
+        exchange: exchange.id,
+        currency: exchange.currency,
+        currencyDisplay: exchange.currency === "USD" ? "USD→TL" : exchange.currency,
+        country: exchange.country,
+        assetType: "STOCK",
+        category: exchange.id,
+        raw: map,
+      };
+    }).filter(Boolean);
+
+  // Log acceptance ratio for debugging
+  try {
+    console.log(`[INTL] ${exchange.id} - accepted ${acceptedCount}, whitelist-filtered ${whitelistSkipped}, other-skipped ${skippedCount}/${rows.length}`);
+  } catch (e) {}
+
+  return filtered;}
 
 export async function startInternationalExchangesCollector({ interval = 30000, marketKey = "INTL" } = {}) {
   console.log("[INTL] Uluslararası Borsalar collector basliyor...");
@@ -314,3 +352,4 @@ export async function startInternationalExchangesCollector({ interval = 30000, m
     bus.off("request_update", onRequestUpdate);
   };
 }
+

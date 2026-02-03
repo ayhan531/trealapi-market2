@@ -1,0 +1,170 @@
+{
+  "AT": {
+    "country": "Avusturya",
+    "exchange": "VSE",
+    "tvExchange": "VIE",
+    "companies": ["OMV", "ANDRITZ", "VOESTALPINE", "VERBUND", "UNIQA", "IMMOFINANZ", "S IMMO", "WIENERBERGER", "SCHOELLER-BLECKMANN", "AMAG", "STRABAG", "BAWAG", "ERSTE GROUP", "AGRANA", "LENZING"]
+  },
+  "AE": {
+    "country": "B.A.E",
+    "exchange": "DFM",
+    "tvExchange": "DFM",
+    "companies": ["EMAAR", "DP WORLD", "DNATA", "ARAMCO", "ETISALAT", "DU", "ENBD", "FAB", "DAMAC", "AZIZI", "DEWA", "ADNOC", "TABREED", "ALDAR", "SOROUH"]
+  },
+  "BH": {
+    "country": "Bahreyn",
+    "exchange": "BHX",
+    "tvExchange": "BAHRAIN",
+    "companies": ["NBB", "ALBARAKA BANKING", "KHALEEJI COMMERCIAL", "BANK OF BAHRAIN", "GFH FINANCIAL", "BB TELECOM", "GULF AIR", "ITHMAAR BANK", "SEEF PROPERTIES", "NASS CORPORATION", "ALBA", "BAHRAIN PETROLEUM", "BAHRAIN MARINE", "TAMEEN", "AHLI UNITED"]
+  },
+  "BE": {
+    "country": "Belçika",
+    "exchange": "ENXBE",
+    "tvExchange": "EURONEXT",
+    "companies": ["AXA", "DELHAIZE", "AB INBEV", "AGEAS", "BARCO", "BEKAERT", "ELIA", "EXMAR", "FNG", "GIMV", "IMMOBEL", "KINEPOLIS", "UMICORE", "ARGENX", "ADYEN"]
+  },
+  "CZ": {
+    "country": "Çekya",
+    "exchange": "PSE",
+    "tvExchange": "PSE",
+    "companies": ["CEZ", "KOMERCNI BANKA", "ERSTE BANK", "OKD", "UNIPETROL", "PRAZSKA ENERGETIKA", "SKODA", "TATRA BANKA", "CESKE DRAHY", "VITKOVICE", "FERONA", "ENERGA", "KRYPTON", "BAUSCH LOMB", "TEXTILANA"]
+  },
+  "DK": {
+    "country": "Danimarka",
+    "exchange": "CSE",
+    "tvExchange": "CSE",
+    "companies": ["NOVO", "LUNDBECK", "ORSTED", "OTICON", "VESTAS", "DSV", "GENMAB", "BAVARIAN NORDIC", "DEMANT", "NETCOMPANY", "SYZYGY", "QUICKBIT", "BANKNORDIK", "CIMBER STERLING", "ICCC"]
+  },
+  "FI": {
+    "country": "Finlandiya",
+    "exchange": "HEX",
+    "tvExchange": "HEL",
+    "companies": ["NOKIA", "SAMPO", "NORDEA", "FORTUM", "OUTOTEC", "METSO", "STORA ENSO", "UPM-KYMMENE", "KONE", "OUTOKUMPU", "WARTSILA", "RAISIO", "HUHTAMAKI", "VALMET", "ASPOCOMP"]
+  },
+  "FR": {
+    "country": "Fransa",
+    "exchange": "ENXPA",
+    "tvExchange": "EURONEXT",
+    "companies": ["LVMH", "SANOFI", "TOTAL", "LEGRAND", "SCHNEIDER ELECTRIC", "DANONE", "RENAULT", "PEUGEOT", "MICHELIN", "CAPGEMINI", "DASSAULT SYSTEMS", "EIFFAGE", "FAURECIA", "BOUYGUES", "VINCI"]
+  },
+  "ZA": {
+    "country": "G.Afrika",
+    "exchange": "JSE",
+    "tvExchange": "JSE",
+    "companies": ["NASPERS", "PROSUS", "SASOL", "MULTICHOICE", "SHOPRITE", "WOOLWORTHS", "CLICKS", "STEINHOFF", "KUMBA", "LONMIN", "NETCARE", "OLD MUTUAL", "REMGRO", "IMPALA PLATINUM", "SIBANYE-STILLWATER"]
+  },
+  "NL": {
+    "country": "Hollanda",
+    "exchange": "ENXAM",
+    "tvExchange": "EURONEXT",
+    "companies": ["PHILIPS", "UNILEVER", "SHELL", "ING", "ASML", "HEINEKEN", "AHOLD DELHAIZE", "WOLTERS KLUWER", "AKZO NOBEL", "BOSKALIS", "FUGRO", "ADYEN", "BOOKING", "NN GROUP", "RANDSTAD"]
+  },
+  "GB": {
+    "country": "İngiltere",
+    "exchange": "LSE",
+    "tvExchange": "LSE",
+    "companies": ["HSBC", "BARCLAYS", "LLOYDS", "ASTRAZENECA", "UNILEVER", "SHELL", "BP", "DIAGEO", "BUNZL", "MELROSE", "INTERTEK", "SMITH NEPHEW", "EXPERIAN", "INFORMA", "HISCOX"]
+  },
+  "IE": {
+    "country": "İrlanda",
+    "exchange": "ENXDU",
+    "tvExchange": "EURONEXT",
+    "companies": ["ACCENTURE", "BANK OF IRELAND", "CRH", "DCC", "DATALEX", "EASYJET", "RYANAIR", "KINGSPAN", "GRAFTON", "KERRY GROUP", "SMURFIT KAPPA", "FLUTTER ENTERTAINMENT", "EXPERIAN", "MEDTRONIC", "APTIV"]
+  },
+  "ES": {
+    "country": "İspanya",
+    "exchange": "BME",
+    "tvExchange": "BME",
+    "companies": ["INDITEX", "TELEFONICA", "BANCO SANTANDER", "BBVA", "SIEMENS GAMESA", "REPSOL", "IBERDROLA", "GRIFOLS", "AMADEUS", "CELLNEX", "FERROVIAL", "ENDESA", "ACS", "MAPFRE", "CAIXABANK"]
+  },
+  "SE": {
+    "country": "İsveç",
+    "exchange": "OMXS",
+    "tvExchange": "OMXSTO",
+    "companies": ["VOLVO", "ALFA LAVAL", "AUTOLIV", "ASSA ABLOY", "ATLAS COPCO", "ELECTROLUX", "SANDVIK", "SKF", "H&M", "HEXAGON", "EPIROC", "NIBE", "HEXPOL", "INDUTRADE", "SV"]
+  },
+  "CH": {
+    "country": "İsviçre",
+    "exchange": "SIX",
+    "tvExchange": "SIX",
+    "companies": ["NESTLE", "ROCHE", "NOVARTIS", "ABB", "ZURICH INSURANCE", "GIVAUDAN", "SWATCH", "LONZA", "ALCON", "GEBERIT", "CLARIANT", "HOLCIM", "SIKA", "LINDT", "KUHNE+NAGEL"]
+  },
+  "IT": {
+    "country": "İtalya",
+    "exchange": "MIL",
+    "tvExchange": "MIL",
+    "companies": ["FIAT", "ENI", "INTESA SANPAOLO", "BANCO BPM", "TELECOM ITALIA", "FERRARI", "MASERATI", "UNICREDIT", "MEDIOBANCA", "POSTE ITALIANE", "ITALGAS", "SNAM", "PRADA", "GEOX", "LUXOTTICA"]
+  },
+  "QA": {
+    "country": "Katar",
+    "exchange": "QE",
+    "tvExchange": "TADAWUL",
+    "companies": ["QATAR NATIONAL BANK", "DOHA BANK", "QATAR INSURANCE", "QATAR TELECOM", "OOREDOO", "QATAR PETROLEUM", "QATAR STEEL", "QATAR CEMENT", "QATAR AIRWAYS", "QATAR FOUNDATION", "QATAR FINANCE", "QATAR BANK", "QATAR CREDIT", "QATAR TRADE", "QATAR SERVICES"]
+  },
+  "KW": {
+    "country": "Kuveyt",
+    "exchange": "KSE",
+    "tvExchange": "KSE",
+    "companies": ["NATIONAL BANK OF KUWAIT", "GULF BANK", "BURGAN BANK", "BOUBYAN BANK", "AHLI BANK", "KUWAIT FINANCE HOUSE", "KUWAIT INSURANCE", "KUWAIT NATIONAL PETROLEUM", "ZAIN", "ETIHAD ETISALAT", "KUWAIT CEMENT", "KUWAIT STEEL", "KUWAIT AIRLINES", "KUWAIT SHIPPING", "KUWAIT TRADING"]
+  },
+  "HU": {
+    "country": "Macaristan",
+    "exchange": "BES",
+    "tvExchange": "BSE",
+    "companies": ["MOL", "OTP BANK", "BUDAPEST BANK", "MAGYAR TELEKOM", "RICHTER GEDEON", "BUDAPEST ENERGY", "BUDAPEST WATER", "HUNGARIAN ENERGY", "HUNGARIAN INSURANCE", "BUDAPEST TRANSPORT", "BUDAPEST UTILITIES", "BUDAPEST SERVICES", "HUNGARIAN CHEMICALS", "BUDAPEST CONSTRUCTION", "HUNGARIAN ELECTRONICS"]
+  },
+  "EG": {
+    "country": "Mısır",
+    "exchange": "EGX",
+    "tvExchange": "EGX",
+    "companies": ["COMMERCIAL INTERNATIONAL BANK", "EMAAR MISR", "EGYPTIAN NATIONAL PETROLEUM", "EGYPTIAN TELECOM", "ALEXANDRIA CEMENT", "ARAB CONTRACTORS", "EFG HERMES", "EGYPTIAN INSURANCE", "EGYPTIAN BANK", "EGYPTIAN FINANCE", "EGYPTIAN TRADING", "EGYPTIAN REAL ESTATE", "EGYPTIAN MANUFACTURING", "EGYPTIAN INDUSTRIES", "EGYPTIAN UTILITIES"]
+  },
+  "NO": {
+    "country": "Norveç",
+    "exchange": "OBX",
+    "tvExchange": "OSL",
+    "companies": ["EQUINOR", "DNB", "TELENOR", "NORSK HYDRO", "YARA", "MOWI", "ODFJELL", "AKER SOLUTIONS", "OCEANERGY", "AKERSHUS ENERGY", "NORWAY OIL", "NORWAY GAS", "NORWAY SHIPPING", "NORWAY FISH", "NORWAY FOREST"]
+  },
+  "OM": {
+    "country": "Oman",
+    "exchange": "MSM",
+    "tvExchange": "MUS",
+    "companies": ["OMAN NATIONAL INVESTMENT FUND", "OMAN OIL GAS", "OMAN MINERALS TRADING", "OMAN BANK", "OMAN INSURANCE", "OMAN PETROCHEMICAL", "OMAN TELECOM", "OMAN ENERGY", "OMAN FINANCE", "OMAN TRADING", "OMAN SERVICES", "OMAN SHIPPING", "OMAN MANUFACTURING", "OMAN CONSTRUCTION", "OMAN UTILITIES"]
+  },
+  "PL": {
+    "country": "Polonya",
+    "exchange": "GPW",
+    "tvExchange": "GPW",
+    "companies": ["PKN ORLEN", "TAURON", "PGNIG", "ENEA", "LOTOS", "MBANK", "PEKAO", "SANTANDER", "ASSECO", "KGHM", "CYFROWY POLSAT", "PLAY COMMUNICATIONS", "ALIOR BANK", "BANK ZACHODNI", "CREDIT AGRICOLE"]
+  },
+  "PT": {
+    "country": "Portekiz",
+    "exchange": "ENXLI",
+    "tvExchange": "EURONEXT",
+    "companies": ["EDP", "GALP", "JERÓNIMO MARTINS", "BANCO BPI", "CAIXA BANK", "CORTICEIRA AMORIM", "PORTUCEL", "SONAE", "SONAECOM", "MOTA-ENGIL", "NOVABASE", "NOS", "TEIXEIRA DUARTE", "BIAL", "PHAROL"]
+  },
+  "SA": {
+    "country": "S.Arabistan",
+    "exchange": "TASI",
+    "tvExchange": "TADAWUL",
+    "companies": ["SAUDI ARAMCO", "SAUDI TELECOM", "KINGDOM HOLDING", "AL RAJHI BANKING", "RIYAD BANK", "SAUDI NATIONAL BANK", "SAUDI INDUSTRIAL", "SAUDI CEMENT", "SAUDI ELECTRICITY", "SAUDI BASIC INDUSTRIES", "SAUDI PETROCHEMICAL", "SAUDI PHARMACEUTICAL", "SAUDI INSURANCE", "SAUDI TRADING", "SAUDI SERVICES"]
+  },
+  "GR": {
+    "country": "Yunanistan",
+    "exchange": "ATHEX",
+    "tvExchange": "ATHEX",
+    "companies": ["ALPHA BANK", "EUROBANK", "MYTILINEOS", "COCA-COLA HBC", "MOTOR OIL", "ATHENS WATER SUPPLY", "HELLENIC TELECOMMUNICATIONS", "OPAP", "ATTICA BANK", "ATTICA HOLDINGS", "ATTICA MARITIME", "ATTICA PROPERTIES", "GREEK BANK", "GREEK INSURANCE", "GREEK ENERGY"]
+  },
+  "DE": {
+    "country": "Almanya",
+    "exchange": "XETRA",
+    "tvExchange": "XETR",
+    "companies": ["SAP", "SIEMENS", "ALLIANZ", "DEUTSCHE TELEKOM", "MERCEDES-BENZ", "BMW", "VOLKSWAGEN", "PORSCHE", "ADIDAS", "PUMA", "BASF", "BAYER", "VONOVIA", "ZALANDO", "INFINEON"]
+  },
+  "US": {
+    "country": "Amerika",
+    "exchange": "NYSE/NASDAQ",
+    "tvExchange": "NASDAQ",
+    "companies": ["TESLA", "GOOGLE", "NVIDIA", "MICROSOFT", "APPLE", "AMAZON", "FACEBOOK", "META", "NETFLIX", "UBER", "AIRBNB", "ZOOM", "SHOPIFY", "CROWDSTRIKE", "DATADOG", "MONGODB", "GITLAB", "SLACK", "TWILIO", "STRIPE", "SOFI", "ROBINHOOD", "AFFIRM", "COINBASE", "FIGMA", "CANVA", "DISCORD", "KLARNA", "REVOLUT", "WISE"]
+  }
+}
