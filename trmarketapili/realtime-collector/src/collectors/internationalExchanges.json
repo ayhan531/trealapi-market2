@@ -232,17 +232,6 @@
       "timezone": "Europe/Oslo"
     },
     {
-      "id": "MSM",
-      "name": "Muscat Securities Market",
-      "country": "Oman",
-      "countryCode": "OM",
-      "currency": "OMR",
-      "tradingHours": "09:00-13:00",
-      "utcOffset": 4,
-      "tvExchange": "MSM",
-      "timezone": "Asia/Muscat"
-    },
-    {
       "id": "GPW",
       "name": "Warsaw Stock Exchange",
       "country": "Polonya",
