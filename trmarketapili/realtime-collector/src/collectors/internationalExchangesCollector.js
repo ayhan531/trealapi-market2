@@ -17,24 +17,24 @@ const countryCompanies = JSON.parse(fs.readFileSync(countryCompaniesPath, "utf-8
 const TV_ENDPOINT = "https://scanner.tradingview.com/global/scan";
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
-// TL Conversion - 1 USD = ~33 TL (güncellenebilir)
-let exchangeRate = 33;
+// TL Conversion - 1 USD = ~43.51 TL (güncellenebilir, her 30 saniyede bir çekiliyor)
+let exchangeRate = 43.51;
 async function fetchExchangeRate() {
   try {
     const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
     if (res.ok) {
       const data = await res.json();
-      exchangeRate = data.rates?.TRY || 33;
-      console.log(`[INTL] Exchange Rate: 1 USD = ${exchangeRate.toFixed(2)} TL`);
+      exchangeRate = data.rates?.TRY || 43.51;
+      console.log(`[INTL] Exchange Rate Updated: 1 USD = ${exchangeRate.toFixed(2)} TL`);
     }
   } catch (err) {
-    console.log("[INTL] Exchange rate API başarısız, default kullanılıyor");
+    console.log("[INTL] Exchange rate API başarısız, son bilineni kullanıyor");
   }
 }
 
-// Her saatte bir kuru güncelle
-setInterval(fetchExchangeRate, 3600000);
-fetchExchangeRate();
+// Her 30 saniyede kuru güncelle (canlı fiyatlar için)
+setInterval(fetchExchangeRate, 30000);
+fetchExchangeRate(); // Başlangıçta hemen çek
 
 // Eksik marketler için alternatif ID'ler
 const ALTERNATIVE_IDS = {
