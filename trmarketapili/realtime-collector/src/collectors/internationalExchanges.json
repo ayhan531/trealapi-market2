@@ -173,7 +173,7 @@
       "currency": "EUR",
       "tradingHours": "10:00-18:30",
       "utcOffset": 1,
-      "tvExchange": "MIL",
+      "tvExchange": "EURONEXT",
       "timezone": "Europe/Rome"
     },
     {
@@ -261,7 +261,7 @@
       "currency": "SAT",
       "tradingHours": "10:00-15:00",
       "utcOffset": 3,
-      "tvExchange": "TADAWUL",
+      "tvExchange": "EURONEXT",
       "timezone": "Asia/Riyadh"
     },
     {
