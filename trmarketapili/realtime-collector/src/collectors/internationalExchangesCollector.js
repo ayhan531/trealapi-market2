@@ -82,7 +82,7 @@ async function fetchExchangeData(exchange) {
       { left: "type", operation: "in_range", right: ["stock"] }
     ],
     options: { lang: "tr" },
-    range: [0, 500],
+    range: [0, 1000],
     sort: { sortBy: "market_cap_basic", sortOrder: "desc" },
     columns: [
       "name",
@@ -145,7 +145,7 @@ async function fetchExchangeData(exchange) {
   }
 
   const json = await resp.json();
-    const rows = Array.isArray(json?.data) ? json.data.slice(0, 500) : [];
+    const rows = Array.isArray(json?.data) ? json.data.slice(0, 1000) : [];
 
     // Filter symbols: only keep those belonging to the target country.
     // Use countryCompanies whitelist to filter symbols by country.
