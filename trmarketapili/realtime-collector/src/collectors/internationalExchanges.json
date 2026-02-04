@@ -118,7 +118,7 @@
       "currency": "GBP",
       "tradingHours": "10:00-18:30",
       "utcOffset": 0,
-      "tvExchange": "TVC:FTSE",
+      "tvExchange": "LSE",
       "timezone": "Europe/London"
     },
     {
