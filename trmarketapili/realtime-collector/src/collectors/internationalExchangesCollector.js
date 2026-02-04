@@ -187,7 +187,8 @@ async function fetchExchangeData(exchange) {
       return {
         symbol,
         name: map.description || map.name || symbol,
-        price: map.close ? Math.round(map.close * exchangeRate * 100) / 100 : null,
+        price: map.close || 0,
+        priceInTL: map.close ? Math.round(map.close * exchangeRate * 100) / 100 : 0,
         change: map.change_abs ?? map.change,
         changePct: map.change,
         volume: map.volume,
