@@ -105,15 +105,46 @@ async function fetchExchangeData(exchange) {
     console.log(`[INTL-DEBUG] ${exchange.id} - TV ID test: "${exchange.tvExchange}"`);
   }
 
-  const resp = await fetch(TV_ENDPOINT, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(payload),
-    timeout: 15000,
-  });
+  // Retry logic for rate limiting (429)
+  let retryCount = 0;
+  const maxRetries = 2;
+  let resp;
 
-  if (!resp.ok) throw new Error(`TV HTTP ${resp.status}`);
-    const json = await resp.json();
+  while (retryCount <= maxRetries) {
+    try {
+      resp = await fetch(TV_ENDPOINT, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+        timeout: 15000,
+      });
+
+      if (resp.status === 429) {
+        // Rate limited - wait and retry
+        retryCount++;
+        if (retryCount <= maxRetries) {
+          const waitTime = 3000 * retryCount; // 3s, 6s, 9s
+          console.log(`[INTL] ${exchange.id}: Rate limited (429) - ${waitTime}ms bekleniyor (retry ${retryCount}/${maxRetries})`);
+          await wait(waitTime);
+          continue;
+        }
+      }
+
+      if (!resp.ok) throw new Error(`TV HTTP ${resp.status}`);
+      break; // Başarılı
+    } catch (err) {
+      if (retryCount < maxRetries) {
+        retryCount++;
+        const waitTime = 3000 * retryCount;
+        console.log(`[INTL] ${exchange.id}: Hata - ${waitTime}ms bekleniyor (retry ${retryCount}/${maxRetries})`);
+        await wait(waitTime);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  const json = await resp.json();
     const rows = Array.isArray(json?.data) ? json.data.slice(0, 100) : [];
 
     // Filter symbols: only keep those belonging to the target country.
@@ -185,68 +216,6 @@ export async function startInternationalExchangesCollector({ interval = 30000, m
   let backoffMs = 0;
   const allData = {};
 
-  // Eksik market ID'lerini test et
-  async function testMissingExchanges() {
-    console.log("[INTL] === Eksik Market ID'leri Test Ediliyor ===");
-    const missingExchanges = [
-      "ENXBE", "HEX", "ENXPA", "ENXAM", "ENXDU", "BES", "QE", "ENXLI", "MSM", "XETRA", "STO"
-    ];
-
-    for (const exchId of missingExchanges) {
-      const alternatives = ALTERNATIVE_IDS[exchId] || [];
-      console.log(`\n[INTL-TEST] ${exchId} - Denenen ID'ler: ${alternatives.join(", ")}`);
-
-      for (const altId of alternatives) {
-        try {
-          const testExchange = {
-            id: exchId,
-            tvExchange: altId,
-            currency: "USD"
-          };
-
-          const data = await fetchExchangeData(testExchange);
-          if (data.length > 0) {
-            console.log(`[INTL-TEST] ✓ ${exchId} başarılı! ID: ${altId} → ${data.length} hisse`);
-            break; // Bulundu, sonrakini deneme
-          }
-        } catch (err) {
-          // Sessiz hata
-        }
-      }
-    }
-
-    // === BULK TEST: Muscat ve Frankfurt için kapsamlı ID listesi ===
-    console.log("\n[INTL-BULK] ===== MUSCAT VE FRANKFURT KAPSAMLI SCAN =====");
-    
-    const bulkTests = [
-      { code: "MSM", names: ["MSM", "MUSCAT", "OMR", "OMAN", "MUSCAT_SECURITIES", "SOHAR", "OMAN_MAIN", "OMANI", "MUSCAT_MAIN", "OMAN_MARKET", "SECURITIES_MUSCAT", "OSM", "OMS"] },
-      { code: "XETRA", names: ["XETRA", "FRA", "FRANKFURT", "DB", "XETRA_MAIN", "DEUTSCHE", "XETRA_TRADING", "GER", "GERMAN", "GERM", "EUREX", "EURA", "XETR"] }
-    ];
-
-    for (const bulk of bulkTests) {
-      console.log(`\n[INTL-BULK] ${bulk.code} - ${bulk.names.length} alternatif test ediliyor...`);
-      for (const altId of bulk.names) {
-        try {
-          const testExchange = {
-            id: bulk.code,
-            tvExchange: altId,
-            currency: "USD"
-          };
-
-          const data = await fetchExchangeData(testExchange);
-          if (data.length > 0) {
-            console.log(`[INTL-BULK] ✓✓✓ BULUNDU! ${bulk.code} → ID: "${altId}" = ${data.length} hisse`);
-            // Başarılı ID'yi ekstra log et
-            console.log(`[INTL-BULK-SUCCESS] Güncelle: "${bulk.code}": tvExchange="${altId}"`);
-            break;
-          }
-        } catch (err) {
-          // Sessiz hata
-        }
-      }
-    }
-  }
-
   async function fetchAllExchanges() {
     if (!isRunning) return;
     if (getPaused && getPaused(marketKey)) {
@@ -258,25 +227,27 @@ export async function startInternationalExchangesCollector({ interval = 30000, m
     const results = [];
     console.log(`[INTL] ${exchanges.length} borsadan veri çekiliyor...`);
 
-    // Her borsa için paralel istekler yapalım (5 tanesini aynı anda)
-    for (let i = 0; i < exchanges.length; i += 5) {
-      const batch = exchanges.slice(i, i + 5);
-      console.log(`[INTL] Batch ${i/5 + 1}/${Math.ceil(exchanges.length/5)}: ${batch.map(e => e.id).join(', ')}`);
+    // Her borsa için SIRASAL istekler (rate limiting'i azaltmak için)
+    // Paralel yerine 2'lik batch'ler ve aralarında uzun delay
+    for (let i = 0; i < exchanges.length; i += 2) {
+      const batch = exchanges.slice(i, i + 2);
+      console.log(`[INTL] Batch ${Math.floor(i/2) + 1}/${Math.ceil(exchanges.length/2)}: ${batch.map(e => e.id).join(', ')}`);
+      
       const promises = batch.map((exchange) =>
         fetchExchangeData(exchange)
           .then((data) => {
             allData[exchange.id] = data;
-            console.log(`[INTL] ${exchange.id}: ${data.length} hisse`);
+            console.log(`[INTL] ✓ ${exchange.id}: ${data.length} hisse`);
             return { exchange, success: true, count: data.length };
           })
           .catch((err) => {
-            console.error(`[INTL] ${exchange.id} hatasi:`, err.message);
+            console.error(`[INTL] ✗ ${exchange.id} hatasi:`, err.message);
             return { exchange, success: false, error: err.message };
           })
       );
 
       await Promise.all(promises);
-      await wait(1000); // Rate limiting için ara
+      await wait(2500); // 2.5 saniye delay batch'ler arasında (rate limiting)
     }
 
     // Toplamış verileri gönder
@@ -303,9 +274,6 @@ export async function startInternationalExchangesCollector({ interval = 30000, m
 
   try {
     console.log("[INTL] İlk fetch başlıyor...");
-    // Eksik market'leri test et
-    await testMissingExchanges();
-    // Sonra normal fetch
     await fetchAllExchanges();
     console.log("[INTL] İlk fetch tamamlandı");
   } catch (err) {

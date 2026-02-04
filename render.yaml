@@ -12,4 +12,4 @@ services:
       - key: TVAPI_INTERVAL
         value: 5000
       - key: TRADINGVIEW_SESSION_ID
-        value: _ga=GA1.1.1972120831.1760300284; cookiesSettings={"analytics":true,"advertising":true}; cookiePrivacyPreferenceBannerProduction=accepted; device_t=dG9xWEJnOjE.9RS8DeUNQmh55ccLosZX-5o212waCd7ECrnjb-2ITHU; _sp_ses.cf1a=*; sessionid=hq53rcp7dezw4f2ounaucqb4obw0czr3; sessionid_sign=v3:ZLGtNhVcuRhmuxOe8i7AG/FWKggb8sWkGahcXDPv5x0=; png=839cefee-9feb-44d4-85b8-2e664ec204cf; etg=839cefee-9reb-44d4-85b8-2e664ec204cf; cachec=839cefee-9feb-44d4-85b8-2e664ec204cf; tv_ecuid=839cefee-9feb-44d4-85b8-2e664ec204cf; _sp_id.cf1a=89a5d8d9-5ed7-42bb-a566-094bc9163b2c.1760270001.8.1760485753.1760482782.43fd2676-a912-42c5-a35c-02988b318704.320ac6ff-5c18-41dd-a18c-98da7da4b2c6.9a8335ba-70f6-4c04-ae11-1622e8cb7eee.1760485192873.5; _ga_YVVRYGL0E0=GS2.1.s1760482756$o6$g1$t1760486178$j60$l0$h0
+        fromSecret: true
